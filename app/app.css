@@ -1,15 +1,7 @@
 @import "tailwindcss";
-
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+input:-webkit-autofill {
+  box-shadow: 0 0 0px 1000px #ffffff26 inset !important; /* fondo dark */
+  -webkit-text-fill-color: #e4e4e7 !important;         /* texto claro */
+  transition: background-color 9999s ease-in-out 0s;   /* hack visual */
 }
-
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
-
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
-}
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));

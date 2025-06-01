@@ -1,13 +1,23 @@
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
-
+import MainLayout from "~/components/Generals/MainLayout";
+import { useNavigate } from "react-router";
+import { useAuth } from "~/context/AuthContext";
+import { useEffect } from "react";
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "Bienvenido" },
+    { name: "description", content: "Bienvenido" },
   ];
 }
 
 export default function Home() {
-  return <Welcome />;
+  const { auth, session } = useAuth();
+  const navigate = useNavigate();
+  /* useEffect(() => {
+    auth();
+    if (!session) navigate("/login");
+  }, []); */
+  return (
+    <h1>Home</h1>
+  );
 }

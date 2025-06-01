@@ -5,4 +5,14 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://imapx.com.ar/im-api/',
+        changeOrigin: true,
+        secure: false,
+        rewrite: path => path.replace(/^\/api/, '')
+      }
+    }
+  }
 });
