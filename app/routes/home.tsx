@@ -1,5 +1,4 @@
 import type { Route } from "./+types/home";
-import MainLayout from "~/components/Generals/MainLayout";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { useEffect } from "react";
@@ -18,6 +17,9 @@ export default function Home() {
     if (!session) navigate("/login");
   }, []); */
   return (
-    <h1>Home</h1>
+    <>
+      <h1>Home</h1>
+      
+    </>
   );
 }
