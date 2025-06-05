@@ -31,7 +31,7 @@ export const Input = ({
 
       <input
         id={id}
-        className={basesClass(error ?? "")}
+        className={`${basesClass(error ?? "")}`}
         {...inputProps}
         {...register}
       />

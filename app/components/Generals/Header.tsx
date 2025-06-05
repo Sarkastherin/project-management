@@ -45,7 +45,7 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <p>Hola, Katherin</p>
+            <p className="text-pink-300">Hola, Katherin</p>
             <button className="rounded-full p-2 text-zinc-400 hover:text-indigo-400 cursor-pointer"
             onClick={toggleTheme}>
               {<LightIcon/>}

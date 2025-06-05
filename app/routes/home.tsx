@@ -1,7 +1,10 @@
 import type { Route } from "./+types/home";
 import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
+import { supabase } from "~/backend/supabaseClient";
 import { useEffect } from "react";
+;
+
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Bienvenido" },
@@ -19,7 +22,6 @@ export default function Home() {
   return (
     <>
       <h1>Home</h1>
-      
     </>
   );
 }

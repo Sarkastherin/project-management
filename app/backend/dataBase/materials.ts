@@ -18,10 +18,10 @@ type MaterialsInput = {
   peso?: number;
 };
 
-export type Materials = MaterialsInput & {
+export type MaterialsType = MaterialsInput & {
   id: number;
   created_at: string;
 };
-export const materialsApi = createCrud<Materials, MaterialsInput>(
+export const materialsApi = createCrud<MaterialsType, MaterialsInput>(
   "materiales"
 );

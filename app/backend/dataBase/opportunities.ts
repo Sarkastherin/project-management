@@ -9,11 +9,11 @@ type OpportunityInput = {
   loss_reason: string | null;
 };
 
-export type Opportunity = OpportunityInput & {
+export type OpportunityType = OpportunityInput & {
   id: number;
   created_at: string;
 };
-export const opportunityApi = createCrud<Opportunity, OpportunityInput>(
+export const opportunityApi = createCrud<OpportunityType, OpportunityInput>(
   "opportunities"
 );
 
