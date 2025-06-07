@@ -1,13 +1,15 @@
-import Logo from "../../../public/logo_white.svg";
 import { NavLink } from "react-router";
-import LightIcon from "../icons/light";
 import { useUI } from "~/context/UIContext";
+import { useAuth } from "~/context/AuthContext";
+import { LightBulbIcon, MoonIcon } from "@heroicons/react/24/outline";
+
 type MyLinkProps = {
   to: string;
   children: React.ReactNode;
 };
 export default function Header() {
-  const { toggleTheme } = useUI();
+  const {user, session} = useAuth()
+  const { toggleTheme, theme } = useUI();
   const MyLink = ({ to, children }: MyLinkProps) => {
     return (
       <NavLink
@@ -45,10 +47,10 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <p className="text-pink-300">Hola, Katherin</p>
-            <button className="rounded-full p-2 text-zinc-400 hover:text-indigo-400 cursor-pointer"
+            <p className="text-pink-300">Hola, {user?.name}</p>
+            <button title="toggle-button-theme" className="rounded-full p-2 text-zinc-400 hover:text-indigo-400 cursor-pointer"
             onClick={toggleTheme}>
-              {<LightIcon/>}
+              {theme==="dark" ? <LightBulbIcon className="w-5"/> : <MoonIcon className="w-5"/>}
             </button>
           </div>
         </div>

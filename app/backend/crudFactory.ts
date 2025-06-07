@@ -1,3 +1,4 @@
+import type { OpportunityType } from "./dataBase/opportunities";
 import { supabase } from "./supabaseClient";
 
 type CommonResponse<TFull> = {
@@ -23,27 +24,50 @@ type FilterOptions = {
 };
 export const createCrud = <TFull, TInsert extends object>(table: string) => {
   return {
-    insert: async (payload: TInsert): Promise<CommonResponse<TFull>> => {
+    insertOne: async (payload: TInsert): Promise<CommonResponse<TFull>> => {
       try {
         const { data, error } = await supabase
           .from(table)
           .insert([payload])
           .select();
         if (error) throw error;
+
         return { data: data?.[0] ?? null, error: null };
       } catch (err) {
         return {
           data: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error:
+            err instanceof Error
+              ? err
+              : new Error(typeof err === "object" && err !== null && "message" in err ? (err as any).message : String(err)),
+        };
+      }
+    },
+    insert: async (payload: TInsert[]): Promise<CommonResponse<TFull>> => {
+      try {
+        const { data, error } = await supabase
+          .from(table)
+          .insert(payload)
+          .select();
+        if (error) throw error;
+
+        return { data: data?.[0] ?? null, error: null };
+      } catch (err) {
+        return {
+          data: null,
+          error:
+            err instanceof Error
+              ? err
+              : new Error(typeof err === "object" && err !== null && "message" in err ? (err as any).message : String(err)),
         };
       }
     },
     getAll: async (options: FilterOptions): Promise<ListResponse<TFull>> => {
       // Paginacion
-        const page = options.page ?? 1;
-        const pageSize = options.pageSize ?? 10;
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
+      const page = options.page ?? 1;
+      const pageSize = options.pageSize ?? 10;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
       try {
         const { data, error, count } = await supabase
           .from(table)

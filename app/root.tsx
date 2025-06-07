@@ -47,8 +47,7 @@ export default function App() {
   return (
     <AuthProvider>
       <UIProvider>
-        <div className="h-screen flex flex-col bg-neutral-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200">
-          <Outlet />
+        <div className="min-h-screen flex flex-col bg-neutral-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200"><Outlet />
         </div>
       </UIProvider>
     </AuthProvider>

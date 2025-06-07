@@ -1,12 +1,14 @@
 import { createCrud } from "../crudFactory";
-type OpportunityInput = {
+export type StatusType = "Nuevo" | "Desestimada" | "En proceso" | "Enviada" | "Revisión" | "Ganada" | "Perdida"
+
+export type OpportunityInput = {
   name: string;
   scope?: string;
-  id_client: number;
-  status: "Nuevo" | "En progreso" | "Desestimada";
+  id_client: number | null;
+  status: StatusType
   created_by: string;
-  history_data: {} | null;
-  loss_reason: string | null;
+  history_data?: {} | null;
+  loss_reason?: string | null;
 };
 
 export type OpportunityType = OpportunityInput & {

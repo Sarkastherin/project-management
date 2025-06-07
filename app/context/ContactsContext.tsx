@@ -1,11 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-type ContactsContextType = {
-  getClients: () => void;
-};
-type ContactsProviderProps = {
-  children: ReactNode;
-};
-type ClientDataType = {
+export type ClientDataType = {
   cuenta_deud_venta2_id?: number;
   cuenta_deud_venta_id?: number;
   cuenta_proveedores2_id?: number;
@@ -17,7 +11,7 @@ type ClientDataType = {
   id: number;
   id_tributario_extranjero?: number;
   image?: string;
-  is_disabled?: boolean
+  is_disabled?: boolean;
   nombre: string;
   nombre_fantasia?: string;
   observacion?: string;
@@ -26,18 +20,26 @@ type ClientDataType = {
   telefono?: string;
   tipo?: string;
 };
+type ContactsContextType = {
+  getClients: () => void;
+  clients: ClientDataType[];
+};
+type ContactsProviderProps = {
+  children: ReactNode;
+};
+
 const ContactsContext = createContext<ContactsContextType | undefined>(
   undefined
 );
 export const useContacts = (): ContactsContextType => {
   const context = useContext(ContactsContext);
   if (!context) {
-    throw new Error("useContacts must be used within aun ContactsProvider");
+    throw new Error("useContacts must be used within ContactsProvider");
   }
   return context;
 };
 export const ContactsProvider = ({ children }: ContactsProviderProps) => {
-  const [clientes, setClientes] = useState<Array<ClientDataType>>([]);
+  const [clients, setClients] = useState<Array<ClientDataType>>([]);
   const getClients = async () => {
     const myClientData = [];
     try {
@@ -54,13 +56,13 @@ export const ContactsProvider = ({ children }: ContactsProviderProps) => {
         has_more = data.has_more;
         page++;
       }
-      setClientes(myClientData);
+      setClients(myClientData);
     } catch (error) {
       console.error("Error al obtener clientes desde función:", error);
     }
   };
   return (
-    <ContactsContext.Provider value={{ getClients }}>
+    <ContactsContext.Provider value={{ getClients, clients }}>
       {children}
     </ContactsContext.Provider>
   );

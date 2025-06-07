@@ -7,13 +7,23 @@ import type { OpportunityType } from "~/backend/dataBase/opportunities";
 import type { ListResponse } from "~/backend/crudFactory";
 import { useForm } from "react-hook-form";
 import type { FetchResponse } from "~/components/Generals/Tables";
+import { useContacts } from "~/context/ContactsContext";
+import { useEffect } from "react";
+import type { ClientDataType } from "~/context/ContactsContext";
+import BadgeStatus from "~/components/Specific/Badge";
+import { ButtonNavigate } from "~/components/Specific/Buttons";
+import { ContainerScrolling } from "~/components/Generals/Containers";
+import { StatusOptions } from "~/components/Specific/StatusOptions";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Oportunidades" },
-    { name: "Oportunidades", content: "Oportunidades" },
+    { name: "description", content: "Oportunidades" },
   ];
 }
-const columns: TableColumn<OpportunityType>[] = [
+type MyOpportunityType = OpportunityType & {
+  client: ClientDataType;
+};
+const columns: TableColumn<MyOpportunityType>[] = [
   {
     name: "Id",
     selector: (row) => row.id,
@@ -38,13 +48,13 @@ const columns: TableColumn<OpportunityType>[] = [
     selector: (row) => row.name,
   },
   {
-    name: "Id Cliente",
-    selector: (row) => row.id_client || "",
-    width: "150px",
+    name: "Cliente",
+    selector: (row) => row.client.nombre || "",
+    width: "210px",
   },
   {
     name: "Status",
-    selector: (row) => row.status || "",
+    cell: (row) => <BadgeStatus variant={row.status}>{row.status}</BadgeStatus>,
     width: "120px",
   },
   {
@@ -54,32 +64,63 @@ const columns: TableColumn<OpportunityType>[] = [
   },
 ];
 export default function Opportunities() {
+  const { getClients, clients } = useContacts();
   const { register, watch } = useForm();
+  function mapOpportunitiesWithClients(
+    opportunities: OpportunityType[],
+    clients: ClientDataType[]
+  ): MyOpportunityType[] {
+    return opportunities.map((opportunity) => {
+      const client = clients.find((c) => c.id === opportunity.id_client);
+      return { ...opportunity, client: client ?? ({} as ClientDataType) };
+    });
+  }
+
   const fetchData = async ({
     page,
     perPage,
-  }: FetchResponse): Promise<ListResponse<OpportunityType>> => {
-    const { data, error, count } = await opportunityApi.getAll({
-      page: page,
-      pageSize: perPage,
-    });
-    return { data, error, count };
+  }: FetchResponse): Promise<ListResponse<MyOpportunityType>> => {
+    if (clients.length > 0) {
+      const {
+        data: opportunities,
+        error,
+        count,
+      } = await opportunityApi.getAll({
+        page: page,
+        pageSize: perPage,
+      });
+      const myNewData = opportunities
+        ? mapOpportunitiesWithClients(opportunities, clients)
+        : [];
+      return { data: myNewData, error, count };
+    }
+    return { data: null, error: null, count: null };
   };
   const onFilter = async (
     perPage: number
-  ): Promise<ListResponse<OpportunityType>> => {
+  ): Promise<ListResponse<MyOpportunityType>> => {
     const filterOptions = {
       searchText: watch("descripcion"),
       columnsToSearch: ["nombre", "cliente"],
       exactFilters: { material: watch("material"), tipo: watch("tipo") },
       pageSize: perPage,
     };
-    const { data, error, count } = await opportunityApi.filter(filterOptions);
-    if (error) {
-      alert(error);
+    if (clients.length > 0) {
+      const {
+        data: opportunities,
+        error,
+        count,
+      } = await opportunityApi.filter(filterOptions);
+      const myNewData = opportunities
+        ? mapOpportunitiesWithClients(opportunities, clients)
+        : [];
+      return { data: myNewData, error, count };
     }
-    return { data, error, count };
+    return { data: null, error: null, count: null };
   };
+  useEffect(() => {
+    getClients();
+  }, []);
   const FormInputs = () => {
     return (
       <div className="grid grid-cols-4 gap-2 w-full">
@@ -96,31 +137,28 @@ export default function Opportunities() {
           {...register("client")}
         />
         <Select selectText="Selecciona un status">
-          <option value={"Nuevo"}>🆕 Nuevo </option>
-          <option value={"Desestimada"}>🗑️ Desestimada</option>
-          <option value={"En proceso"}>⏳ En proceso</option>
-          <option value={"Enviada"}>📧 Enviada</option>
-          <option value={"Revisión"}>⚠️ Revisión</option>
-          <option value={"Ganada"}>✅ Ganada</option>
-          <option value={"Perdida"}>❌ Perdida</option>
+          <StatusOptions/>
         </Select>
       </div>
     );
   };
   return (
-    <div className={`w-full mx-auto overflow-y-auto`}>
-      <main className="pt-12 p-4 container mx-auto">
-        <h1 className="text-2xl font-bold">Oportunidades</h1>
-
-        <div className="mt-4">
+    <>
+      <ContainerScrolling title="Oportunidades">
+        {clients.length > 0 && (
           <MyDataTable
             columns={columns}
             fetchData={fetchData}
             formFilters={<FormInputs />}
             onFilter={onFilter}
           />
-        </div>
-      </main>
-    </div>
+        )}
+      </ContainerScrolling>
+      <span className="absolute bottom-8 right-8">
+        <ButtonNavigate variant="yellow" route="/new-opportunity">
+          Nueva Oportunidad
+        </ButtonNavigate>
+      </span>
+    </>
   );
 }

@@ -3,8 +3,6 @@ import { useNavigate } from "react-router";
 import { useAuth } from "~/context/AuthContext";
 import { supabase } from "~/backend/supabaseClient";
 import { useEffect } from "react";
-;
-
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Bienvenido" },
@@ -15,7 +13,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Home() {
   const { auth, session } = useAuth();
   const navigate = useNavigate();
-  /* useEffect(() => {
+ /*  useEffect(() => {
     auth();
     if (!session) navigate("/login");
   }, []); */

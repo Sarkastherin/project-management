@@ -1,7 +1,8 @@
+import type React from "react";
 import { Button } from "../Forms/Buttons";
 type ModalBaseProps = {
   title: string;
-  message: string;
+  message: React.ReactNode;
   onClose: () => void;
 };
 
@@ -13,7 +14,7 @@ export default function ModalBase({ title, message, onClose }: ModalBaseProps) {
       aria-modal="true"
       aria-labelledby="modalTitle"
     >
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
+      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900">
         <div className="flex items-start justify-between">
           <h2
             id="modalTitle"

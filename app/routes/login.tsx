@@ -1,5 +1,4 @@
 import type { Route } from "./+types/home";
-import MainLayout from "~/components/Generals/MainLayout";
 import { Input } from "~/components/Forms/Inputs";
 import { useForm } from "react-hook-form";
 import { Button } from "~/components/Forms/Buttons";

@@ -7,5 +7,6 @@ export default [
     route("opportunities", "routes/opportunities.tsx"),
     route("materials", "routes/materials.tsx"),
     route("settings", "routes/settings.tsx"),
+    route("new-opportunity","routes/newOpportunity.tsx")
   ]),
 ] satisfies RouteConfig;

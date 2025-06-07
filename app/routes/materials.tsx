@@ -7,6 +7,7 @@ import type { MaterialsType } from "~/backend/dataBase/materials";
 import type { ListResponse } from "~/backend/crudFactory";
 import { useForm } from "react-hook-form";
 import type { FetchResponse } from "~/components/Generals/Tables";
+import { ContainerScrolling } from "~/components/Generals/Containers";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Materiales" },
@@ -94,19 +95,15 @@ export default function Materials() {
     );
   };
   return (
-    <div className={`w-full mx-auto overflow-y-auto`}>
-      <main className="pt-12 p-4 container mx-auto">
-        <h1 className="text-2xl font-bold">Materiales</h1>
-
-        <div className="mt-4">
-          <MyDataTable
-            columns={columns}
-            fetchData={fetchData}
-            formFilters={<FormInputs />}
-            onFilter={onFilter}
-          />
-        </div>
-      </main>
-    </div>
+    <>
+      <ContainerScrolling title="Materiales">
+        <MyDataTable
+          columns={columns}
+          fetchData={fetchData}
+          formFilters={<FormInputs />}
+          onFilter={onFilter}
+        />
+      </ContainerScrolling>
+    </>
   );
 }

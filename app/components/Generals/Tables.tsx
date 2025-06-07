@@ -4,7 +4,7 @@ import React, { useState, useEffect, type JSX } from "react";
 import { useUI } from "~/context/UIContext";
 import type { ListResponse } from "~/backend/crudFactory";
 import { Button } from "../Forms/Buttons";
-const customStyles = {
+export const customStyles = {
   headCells: {
     style: {
       fontFamily: "sans-serif",

@@ -1,5 +1,5 @@
 import { createCrud } from "../crudFactory";
-type PhasesInput = {
+export type PhasesInput = {
   name: string;
   id_opportunity: number;
   history_data?: object

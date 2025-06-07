@@ -1,17 +1,21 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes, JSX } from "react";
+import type {
+  InputHTMLAttributes,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+  JSX,
+} from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 const basesClass = (error: string) => {
-  return `mt-0.5 w-full rounded border py-2 px-2 shadow-sm sm:text-sm
+  return `mt-0.5 w-full rounded border py-2 px-2 shadow-sm sm:text-sm text-zinc-700
           ${error ? "border-red-500" : "border-zinc-300 dark:border-zinc-600"}
-          dark:text-zinc-200`;
+          dark:text-zinc-200 disabled:bg-zinc-500/15`;
 };
-type InputProps = {
+type CommonInputsProps = {
   label?: string;
   register?: UseFormRegisterReturn;
   error?: string;
-} & InputHTMLAttributes<HTMLInputElement>;
-//type InputNativeProps = InputHTMLAttributes<HTMLInputElement>;
-//type Props = InputProps & InputNativeProps;
+};
+type InputProps = CommonInputsProps & InputHTMLAttributes<HTMLInputElement>;
 export const Input = ({
   label,
   id,
@@ -35,22 +39,23 @@ export const Input = ({
         {...inputProps}
         {...register}
       />
+      {error && (
+        <span className="block mt-0.5 text-red-500 text-xs dark:text-red-400">{error}</span>
+      )}
     </label>
   );
 };
 type SelectProps = {
-  label?: string;
-  register?: UseFormRegisterReturn;
-  error?: string;
   selectText?: string;
   children?: React.ReactNode;
-} & SelectHTMLAttributes<HTMLSelectElement>;
+} & CommonInputsProps &
+  SelectHTMLAttributes<HTMLSelectElement>;
 export const Select = ({
   label,
   id,
   register,
   error,
-  selectText ="Seleccione una opción",
+  selectText = "Seleccione una opción",
   children,
   ...selectProps
 }: SelectProps): JSX.Element => {
@@ -77,6 +82,9 @@ export const Select = ({
             <option value="">{selectText}</option>
             {children}
           </select>
+          {error && (
+            <span className="block mt-0.5 text-red-500 text-xs dark:text-red-400">{error}</span>
+          )}
           <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
             <svg
               className="h-4 w-4 text-gray-500 dark:text-zinc-400"
@@ -94,5 +102,34 @@ export const Select = ({
         </div>
       </label>
     </div>
+  );
+};
+type TextareaProps = CommonInputsProps &
+  TextareaHTMLAttributes<HTMLTextAreaElement>;
+export const Textarea = ({
+  error,
+  label,
+  register,
+  id,
+  ...textareaProps
+}: TextareaProps): JSX.Element => {
+  return (
+    <label htmlFor={id}>
+      <span
+        className={`text-sm font-medium text-zinc-700 dark:text-zinc-200 ${
+          !label && "sr-only"
+        }`}
+      >
+        {label}
+      </span>
+
+      <textarea
+        id={id}
+        className={`${basesClass(error ?? "")} field-sizing-conten`}
+        rows={2}
+        {...register}
+        {...textareaProps}
+      ></textarea>
+    </label>
   );
 };
