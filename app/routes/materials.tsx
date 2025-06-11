@@ -2,12 +2,11 @@ import type { Route } from "./+types/home";
 import { Input, Select } from "~/components/Forms/Inputs";
 import MyDataTable from "~/components/Generals/Tables";
 import type { TableColumn } from "react-data-table-component";
-import { materialsApi } from "~/backend/dataBase/materials";
-import type { MaterialsType } from "~/backend/dataBase/materials";
+import { materialsApi, type MaterialsType } from "~/backend/dataBase";
 import type { ListResponse } from "~/backend/crudFactory";
 import { useForm } from "react-hook-form";
 import type { FetchResponse } from "~/components/Generals/Tables";
-import { ContainerScrolling } from "~/components/Generals/Containers";
+import { ContainerWithTitle } from "~/components/Generals/Containers";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Materiales" },
@@ -96,14 +95,15 @@ export default function Materials() {
   };
   return (
     <>
-      <ContainerScrolling title="Materiales">
+      <ContainerWithTitle title="Materiales">
         <MyDataTable
           columns={columns}
           fetchData={fetchData}
           formFilters={<FormInputs />}
           onFilter={onFilter}
+          onRowClicked={(data) => console.log(data)}
         />
-      </ContainerScrolling>
+      </ContainerWithTitle>
     </>
   );
 }

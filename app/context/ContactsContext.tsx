@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 export type ClientDataType = {
   cuenta_deud_venta2_id?: number;
   cuenta_deud_venta_id?: number;
@@ -27,7 +33,6 @@ type ContactsContextType = {
 type ContactsProviderProps = {
   children: ReactNode;
 };
-
 const ContactsContext = createContext<ContactsContextType | undefined>(
   undefined
 );
@@ -61,6 +66,9 @@ export const ContactsProvider = ({ children }: ContactsProviderProps) => {
       console.error("Error al obtener clientes desde función:", error);
     }
   };
+  useEffect(() => {
+    getClients();
+  }, []);
   return (
     <ContactsContext.Provider value={{ getClients, clients }}>
       {children}

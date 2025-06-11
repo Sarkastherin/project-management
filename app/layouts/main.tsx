@@ -2,7 +2,6 @@ import { Outlet } from "react-router";
 import ModalBase from "~/components/Generals/Modals";
 import { useUI } from "~/context/UIContext";
 import Header from "~/components/Generals/Header";
-import { ContactsProvider } from "~/context/ContactsContext";
 import { useAuth } from "~/context/AuthContext";
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -17,14 +16,14 @@ export default function MainLayout() {
   return (
     <>
       <Header />
-      <ContactsProvider>
         <Outlet />
-      </ContactsProvider>
       {modal && (
         <ModalBase
           title={modal.title}
           message={modal.message}
+          code={modal.code}
           onClose={closeModal}
+          variant={modal.variant}
         />
       )}
     </>

@@ -1,8 +1,5 @@
 import type { Route } from "./+types/home";
-import { useNavigate } from "react-router";
-import { useAuth } from "~/context/AuthContext";
-import { supabase } from "~/backend/supabaseClient";
-import { useEffect } from "react";
+import { ButtonNavigate } from "~/components/Specific/Buttons";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Bienvenido" },
@@ -11,15 +8,9 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const { auth, session } = useAuth();
-  const navigate = useNavigate();
- /*  useEffect(() => {
-    auth();
-    if (!session) navigate("/login");
-  }, []); */
   return (
-    <>
-      <h1>Home</h1>
-    </>
+    <div className="mt-20 grid place-content-center">
+      <ButtonNavigate route={"/opportunity/6"}>Go to opportunity</ButtonNavigate>
+    </div>
   );
 }

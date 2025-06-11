@@ -28,7 +28,7 @@ const columns: TableColumn<ClientDataType>[] = [
 export default function ModalClientes() {
   const [clientsData, setClientsData] = useState<ClientDataType[]>([]);
   const { theme,openClientModal, setOpenClientModal, setSelectedClient } = useUI();
-  const { getClients, clients } = useContacts();
+  const { clients } = useContacts();
   const onFilter = () => {
     const inputElement = document.getElementById("searchText") as HTMLInputElement | null;
     const searchText = inputElement ? inputElement.value.toLocaleLowerCase() : "";
@@ -39,9 +39,6 @@ export default function ModalClientes() {
     });
     setClientsData(filterData);
   };
-  useEffect(() => {
-    getClients();
-  }, []);
   useEffect(() => {
     if (clients.length > 0) {
       setClientsData(clients);

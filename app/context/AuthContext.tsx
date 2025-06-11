@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+
     if (session) {
       getUser(session.user.id);
     }
@@ -64,8 +65,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from("users")
         .select("*")
         .eq("id_user", userId);
-      if(error) {console.log(error)}
-      else {setUser(data[0])}
+      if (error) {
+        alert(`No se pudo acceder al servidor: Error: ${error.message}`);
+      } else {
+        setUser(data[0]);
+      }
+      return
     } catch (e) {
       console.error("Error fetching user:", e);
       return;

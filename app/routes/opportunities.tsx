@@ -2,28 +2,26 @@ import type { Route } from "./+types/home";
 import { Input, Select } from "~/components/Forms/Inputs";
 import MyDataTable from "~/components/Generals/Tables";
 import type { TableColumn } from "react-data-table-component";
-import { opportunityApi } from "~/backend/dataBase/opportunities";
-import type { OpportunityType } from "~/backend/dataBase/opportunities";
+import { opportunityApi, type OpportunityType } from "~/backend/dataBase";
 import type { ListResponse } from "~/backend/crudFactory";
 import { useForm } from "react-hook-form";
 import type { FetchResponse } from "~/components/Generals/Tables";
 import { useContacts } from "~/context/ContactsContext";
-import { useEffect } from "react";
 import type { ClientDataType } from "~/context/ContactsContext";
 import BadgeStatus from "~/components/Specific/Badge";
 import { ButtonNavigate } from "~/components/Specific/Buttons";
-import { ContainerScrolling } from "~/components/Generals/Containers";
+import { ContainerWithTitle } from "~/components/Generals/Containers";
 import { StatusOptions } from "~/components/Specific/StatusOptions";
+import { useNavigate } from "react-router";
+import type { OpportunitiesWithClient } from "~/context/UIContext";
+import { useUI } from "~/context/UIContext";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Oportunidades" },
     { name: "description", content: "Oportunidades" },
   ];
 }
-type MyOpportunityType = OpportunityType & {
-  client: ClientDataType;
-};
-const columns: TableColumn<MyOpportunityType>[] = [
+const columns: TableColumn<OpportunitiesWithClient>[] = [
   {
     name: "Id",
     selector: (row) => row.id,
@@ -64,22 +62,23 @@ const columns: TableColumn<MyOpportunityType>[] = [
   },
 ];
 export default function Opportunities() {
-  const { getClients, clients } = useContacts();
+  const {setSelectedOpportunity} = useUI()
+  const navigate = useNavigate()
+  const { clients } = useContacts();
   const { register, watch } = useForm();
   function mapOpportunitiesWithClients(
     opportunities: OpportunityType[],
     clients: ClientDataType[]
-  ): MyOpportunityType[] {
+  ): OpportunitiesWithClient[] {
     return opportunities.map((opportunity) => {
       const client = clients.find((c) => c.id === opportunity.id_client);
       return { ...opportunity, client: client ?? ({} as ClientDataType) };
     });
   }
-
   const fetchData = async ({
     page,
     perPage,
-  }: FetchResponse): Promise<ListResponse<MyOpportunityType>> => {
+  }: FetchResponse): Promise<ListResponse<OpportunitiesWithClient>> => {
     if (clients.length > 0) {
       const {
         data: opportunities,
@@ -98,7 +97,7 @@ export default function Opportunities() {
   };
   const onFilter = async (
     perPage: number
-  ): Promise<ListResponse<MyOpportunityType>> => {
+  ): Promise<ListResponse<OpportunitiesWithClient>> => {
     const filterOptions = {
       searchText: watch("descripcion"),
       columnsToSearch: ["nombre", "cliente"],
@@ -118,9 +117,6 @@ export default function Opportunities() {
     }
     return { data: null, error: null, count: null };
   };
-  useEffect(() => {
-    getClients();
-  }, []);
   const FormInputs = () => {
     return (
       <div className="grid grid-cols-4 gap-2 w-full">
@@ -142,18 +138,27 @@ export default function Opportunities() {
       </div>
     );
   };
+  interface HandleRowClicked {
+    (data: OpportunitiesWithClient): void;
+  }
+
+  const handleRowClicked: HandleRowClicked = (data) => {
+    setSelectedOpportunity(null)
+    navigate(`/opportunity/${data.id}/resumen`);
+  };
   return (
     <>
-      <ContainerScrolling title="Oportunidades">
+      <ContainerWithTitle title="Oportunidades">
         {clients.length > 0 && (
           <MyDataTable
             columns={columns}
             fetchData={fetchData}
             formFilters={<FormInputs />}
             onFilter={onFilter}
+            onRowClicked={handleRowClicked}
           />
         )}
-      </ContainerScrolling>
+      </ContainerWithTitle>
       <span className="absolute bottom-8 right-8">
         <ButtonNavigate variant="yellow" route="/new-opportunity">
           Nueva Oportunidad

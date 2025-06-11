@@ -30,17 +30,22 @@ export default function Login() {
     const { data, error } = await signIn(login);
     if (error) {
       showModal({
-        title: "❌ Error al iniciar sesión",
+        title: "Error al iniciar sesión",
         message: error.message || "Hubo un problema al intentar ingresar.",
+        code: error.message,
+        variant: "error",
       });
     }
     navigate("/");
   };
   useEffect(() => {
+    auth()
+  }, []);
+  useEffect(() => {
     if (session) {
       navigate("/");
     }
-  }, []);
+  }, [session, navigate]);
   return (
     <div className="flex justify-center items-center h-full">
       <form

@@ -1,4 +1,3 @@
-import type { OpportunityType } from "./dataBase/opportunities";
 import { supabase } from "./supabaseClient";
 
 type CommonResponse<TFull> = {
@@ -39,7 +38,11 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
           error:
             err instanceof Error
               ? err
-              : new Error(typeof err === "object" && err !== null && "message" in err ? (err as any).message : String(err)),
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
         };
       }
     },
@@ -58,7 +61,11 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
           error:
             err instanceof Error
               ? err
-              : new Error(typeof err === "object" && err !== null && "message" in err ? (err as any).message : String(err)),
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
         };
       }
     },
@@ -95,6 +102,28 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         return {
           data: null,
           error: err instanceof Error ? err : new Error("Error inesperado"),
+        };
+      }
+    },
+    getDataByAnyColumn: async ({
+      column,
+      id,
+    }: {
+      column: string;
+      id: number;
+    }): Promise<ListResponse<TFull>> => {
+      try {
+        const { data, error, count } = await supabase
+          .from(table)
+          .select("*")
+          .eq(column, id);
+        if (error) throw error;
+        return { data: data ?? [], error: null, count };
+      } catch (err) {
+        return {
+          data: null,
+          error: err instanceof Error ? err : new Error("Error inesperado"),
+          count: null
         };
       }
     },

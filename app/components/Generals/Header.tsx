@@ -8,7 +8,7 @@ type MyLinkProps = {
   children: React.ReactNode;
 };
 export default function Header() {
-  const {user, session} = useAuth()
+  const { user } = useAuth();
   const { toggleTheme, theme } = useUI();
   const MyLink = ({ to, children }: MyLinkProps) => {
     return (
@@ -25,7 +25,7 @@ export default function Header() {
     );
   };
   return (
-    <header className="bg-zinc-800 dark:bg-zinc-900">
+    <header className="bg-zinc-800 dark:bg-zinc-950/80">
       <div className="mx-auto flex h-16 max-w-screen-xl items-center gap-8 px-4 sm:px-6 lg:px-8">
         <MyLink to="/">Inicio</MyLink>
 
@@ -48,9 +48,16 @@ export default function Header() {
 
           <div className="flex items-center gap-4">
             <p className="text-pink-300">Hola, {user?.name}</p>
-            <button title="toggle-button-theme" className="rounded-full p-2 text-zinc-400 hover:text-indigo-400 cursor-pointer"
-            onClick={toggleTheme}>
-              {theme==="dark" ? <LightBulbIcon className="w-5"/> : <MoonIcon className="w-5"/>}
+            <button
+              title="toggle-button-theme"
+              className="rounded-full p-2 text-zinc-400 hover:text-indigo-400 cursor-pointer"
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? (
+                <LightBulbIcon className="w-5" />
+              ) : (
+                <MoonIcon className="w-5" />
+              )}
             </button>
           </div>
         </div>

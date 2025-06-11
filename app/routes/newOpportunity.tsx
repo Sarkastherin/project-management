@@ -1,5 +1,5 @@
 import type { Route } from "./+types/home";
-import { ContainerScrolling } from "~/components/Generals/Containers";
+import { ContainerWithTitle } from "~/components/Generals/Containers";
 import OpportunityForm from "~/templates/OpportunityForm";
 import { useAuth } from "~/context/AuthContext";
 export function meta({}: Route.MetaArgs) {
@@ -13,18 +13,18 @@ export default function NewOpportunity() {
   const { user } = useAuth();
   return (
     <>
-      <ContainerScrolling title="NewOpportunity">
+      <ContainerWithTitle title="NewOpportunity">
         <OpportunityForm
           mode="create"
           defaultValues={{
             name: "",
-            id_client: null,
+            id_client: 0,
             status: "Nuevo",
             created_by: user?.user_name || "",
             phases: [],
           }}
         />
-      </ContainerScrolling>
+      </ContainerWithTitle>
     </>
   );
 }

@@ -42,14 +42,16 @@ type MyDataTableProps<T extends object> = {
   columns: TableColumn<T>[];
   fetchData: ({ page, perPage }: FetchResponse) => Promise<ListResponse<T>>;
   formFilters: React.ReactNode;
-  onFilter:(perPage: number) => Promise<ListResponse<T>>
+  onFilter: (perPage: number) => Promise<ListResponse<T>>;
+  onRowClicked: (data: T) => void;
 };
 
 export default function MyDataTable<T extends object>({
   columns,
   fetchData,
   formFilters,
-  onFilter
+  onFilter,
+  onRowClicked,
 }: MyDataTableProps<T>): JSX.Element {
   const [ClientComponent, setClientComponent] = useState<any>(null);
   const { theme } = useUI();
@@ -110,6 +112,9 @@ export default function MyDataTable<T extends object>({
         theme={theme}
         paginationPerPage={perPage}
         paginationComponentOptions={options}
+        onRowClicked={onRowClicked}
+        pointerOnHover
+        highlightOnHover
       />
     </>
   );

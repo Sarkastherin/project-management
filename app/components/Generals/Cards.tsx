@@ -87,3 +87,10 @@ export const CardToggle = ({
     </div>
   );
 };
+export const Card = ({children}:{children: React.ReactNode}) => {
+  return (
+    <article className="rounded-[10px] shadow-sm border border-zinc-200 bg-white px-4 py-4 dark:border-zinc-700 dark:bg-zinc-900/70">
+      {children}
+    </article>
+  )
+}

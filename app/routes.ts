@@ -1,4 +1,10 @@
-import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
+import {
+  type RouteConfig,
+  index,
+  layout,
+  route,
+  prefix,
+} from "@react-router/dev/routes";
 
 export default [
   route("login", "routes/login.tsx"),
@@ -7,6 +13,15 @@ export default [
     route("opportunities", "routes/opportunities.tsx"),
     route("materials", "routes/materials.tsx"),
     route("settings", "routes/settings.tsx"),
-    route("new-opportunity","routes/newOpportunity.tsx")
+    route("new-opportunity", "routes/newOpportunity.tsx"),
+    ...prefix("opportunity", [
+      layout("layouts/opportunity.tsx", [
+        route(":id/resumen", "routes/opportunity/resumen.tsx"),
+        route(":id/information", "routes/opportunity/information.tsx"),
+        route(":id/conditions", "routes/opportunity/conditions.tsx"),
+        route(":id/quotes", "routes/opportunity/quotes.tsx"),
+        route(":id/profit-margin", "routes/opportunity/profit-margin.tsx"),
+      ]),
+    ]),
   ]),
 ] satisfies RouteConfig;

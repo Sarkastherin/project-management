@@ -11,6 +11,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 import { AuthProvider } from "./context/AuthContext";
 import { UIProvider } from "./context/UIContext";
+import { ContactsProvider } from "./context/ContactsContext";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -46,10 +47,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <UIProvider>
-        <div className="min-h-screen flex flex-col bg-neutral-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200"><Outlet />
-        </div>
-      </UIProvider>
+      <ContactsProvider>
+        <UIProvider>
+          <div className="min-h-screen flex flex-col bg-neutral-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200"><Outlet />
+          </div>
+        </UIProvider>
+      </ContactsProvider>
     </AuthProvider>
   );
 }
