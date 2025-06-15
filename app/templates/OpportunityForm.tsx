@@ -2,7 +2,7 @@ import { Input, Select, Textarea } from "~/components/Forms/Inputs";
 import { StatusOptions } from "~/components/Specific/StatusOptions";
 import { CardToggle } from "~/components/Generals/Cards";
 import { useForm, useFieldArray } from "react-hook-form";
-import { ButtonDeleteIcon } from "~/components/Specific/Buttons";
+import { ButtonDeleteIcon, ButtonAdd } from "~/components/Specific/Buttons";
 import { useUI } from "~/context/UIContext";
 import ModalClientes from "~/components/Specific/ModalClientes";
 import { useEffect, useState, useRef } from "react";
@@ -13,18 +13,16 @@ import {
   phasesApi,
   type OpportunityInput,
   type PhasesType,
-  type QuotesType,
 } from "~/backend/dataBase";
-import { FooterForms } from "./FooterForms";
+import FooterForms from "./FooterForms";
 // Ensure OpportunityType includes phases as an array
 type PhasesCreateType = { id?: number; name: string; id_opportunity?: number };
 export type OpportunityFormType = OpportunityInput & {
   phases: PhasesCreateType[];
-  //quotes: QuotesType[] | null;
 };
 type OpportunityFormProps = {
   defaultValues: OpportunityFormType;
-  mode: "create" | "edit" | "view";
+  mode: "create" |"view";
 };
 export default function OpportunityForm({
   defaultValues,
@@ -106,7 +104,7 @@ export default function OpportunityForm({
         });
       }
     }
-    if (isModeEdit) {
+    if (mode === "view" && isModeEdit) {
       try {
         const updatePayload: Record<string, string | number | object | null> =
           {};
@@ -304,24 +302,17 @@ export default function OpportunityForm({
                 </tbody>
               </table>
               <div className="mt-4">
-                <button
-                  className="cursor-pointer text-sm font-semibold border rounded-full py-2 px-4 text-indigo-500  border-indigo-400 hover:bg-zinc-200 hover:border-zinc-200 dark:text-indigo-300  dark:border-indigo-300 dark:hover:bg-zinc-700 dark:hover:border-zinc-700"
-                  type="button"
+                <ButtonAdd
                   aria-label="Agregar nueva etapa"
                   onClick={() => {
                     append({ name: "" });
                   }}
-                >
-                  <div className="flex gap-2">
-                    <PlusCircleIcon className="w-4" />
-                    <span>Agregar</span>
-                  </div>
-                </button>
+                />
               </div>
             </div>
           </CardToggle>
         </fieldset>
-        <FooterForms />
+        <FooterForms mode={mode}/>
       </form>
       <ModalClientes />
     </>

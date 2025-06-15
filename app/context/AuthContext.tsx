@@ -67,10 +67,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .eq("id_user", userId);
       if (error) {
         alert(`No se pudo acceder al servidor: Error: ${error.message}`);
-      } else {
-        setUser(data[0]);
+        return;
       }
-      return
+      setUser(data[0]);
+      return;
     } catch (e) {
       console.error("Error fetching user:", e);
       return;

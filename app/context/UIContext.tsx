@@ -7,12 +7,26 @@ import type {
   PhasesType,
   QuotesType,
   ProfitMarginType,
+  DetailsItemsType,
+  DetailsMaterialsType,
+  FamilyType,
+  CategoryType,
+  SubCategoryType,
+  UnitsType,
+  MaterialsType,
+  PricesType
 } from "~/backend/dataBase";
 import {
   opportunityApi,
   phasesApi,
   quotesApi,
   profitMarginApi,
+  detailsItemsApi,
+  detailsMaterialsApi,
+  familyApi,
+  categoryApi,
+  subcategoryApi,
+  unitsApi,
 } from "~/backend/dataBase";
 
 export type OpportunitiesWithClient = OpportunityType & {
@@ -22,12 +36,23 @@ export type OpportunityAll = OpportunityType & {
   phases: PhasesType[];
   quotes: QuotesType[] | [];
   profitMargins: ProfitMarginType[] | [];
+  detailsItems: DetailsItemsType[] | [];
+  detailsMaterials: DetailsMaterialsType[] | [];
 };
 type DirtyFields = {
-    [key: string]: boolean | object;
-  }
+  [key: string]: boolean | object;
+};
 type ModalProps = Omit<ModalBaseProps, "onClose">;
 type ThemeProps = "dark" | "light";
+type CategorizationsProps = {
+  families: FamilyType[] | null;
+  categories: CategoryType[] | null;
+  subcategories: SubCategoryType[] | null;
+  units: UnitsType[] | null;
+};
+type SelectedMaterialType = MaterialsType & {
+  prices: PricesType[] | [] 
+}
 type UIContextType = {
   showModal: (modal: ModalProps) => void;
   closeModal: () => void;
@@ -35,9 +60,17 @@ type UIContextType = {
   toggleTheme: () => void;
   theme: ThemeProps;
   openClientModal: boolean;
+  openSupplierModal: boolean;
+  openPriceModal: boolean;
+  setOpenPriceModal:React.Dispatch<React.SetStateAction<boolean>>;
   setOpenClientModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenSupplierModal: React.Dispatch<React.SetStateAction<boolean>>;
   selectedClient: ClientDataType | null;
   setSelectedClient: React.Dispatch<
+    React.SetStateAction<ClientDataType | null>
+  >;
+  selectedSupplier: ClientDataType | null;
+  setSelectedSupplier: React.Dispatch<
     React.SetStateAction<ClientDataType | null>
   >;
   selectedOpportunity: OpportunityAll | null;
@@ -50,25 +83,43 @@ type UIContextType = {
   setIsModeEdit: React.Dispatch<React.SetStateAction<boolean>>;
   isFieldsChanged: boolean;
   setIsFieldsChanged: React.Dispatch<React.SetStateAction<boolean>>;
-  handleSetIsFieldsChanged: (dirtyFields: DirtyFields, isSubmitSuccessful: boolean) => void;
+  handleSetIsFieldsChanged: (
+    dirtyFields: DirtyFields,
+    isSubmitSuccessful: boolean
+  ) => void;
+  categorizations: CategorizationsProps | null;
+  setCategorizations: React.Dispatch<
+    React.SetStateAction<CategorizationsProps | null>
+  >;
+  getCategorizations: () => Promise<void>;
+  selectedMaterial: SelectedMaterialType | null;
+  setSelectedMaterial: React.Dispatch<React.SetStateAction<SelectedMaterialType | null>>
 };
-
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: ReactNode }) {
-  const [isFieldsChanged, setIsFieldsChanged] =
-    useState<boolean>(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<ClientDataType | null>(
+    null
+  );
+  const [openSupplierModal, setOpenSupplierModal] =useState<boolean>(false);
+  const [categorizations, setCategorizations] =
+    useState<CategorizationsProps | null>(null);
+  const [isFieldsChanged, setIsFieldsChanged] = useState<boolean>(false);
   const [isModeEdit, setIsModeEdit] = useState<boolean>(false);
   const { clients } = useContacts();
   const [modal, setModal] = useState<ModalProps | null>(null);
   const [theme, setTheme] = useState<ThemeProps>("dark");
   const [openClientModal, setOpenClientModal] = useState<boolean>(false);
+  const [openPriceModal, setOpenPriceModal] = useState<boolean>(false)
   const [selectedClient, setSelectedClient] = useState<ClientDataType | null>(
     null
   );
   const showModal = (modal: ModalProps) => setModal(modal);
   const closeModal = () => setModal(null);
+  const [selectedOpportunity, setSelectedOpportunity] =
+    useState<OpportunityAll | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<SelectedMaterialType | null>(null)
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
     document.documentElement.setAttribute(
@@ -76,8 +127,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
       theme === "dark" ? "light" : "dark"
     );
   };
-  const [selectedOpportunity, setSelectedOpportunity] =
-    useState<OpportunityAll | null>(null);
+
   const getOpportunity = async (id: number) => {
     if (!clients || clients.length === 0) {
       console.log("No hay clientes disponibles, obteniendo clientes...");
@@ -112,7 +162,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
           "No se encontraron etapas relacionadas con esta oportunidad"
         );
 
-      //obteniendo cotizacion
+      //obteniendo cotizaciones
       const { data: quotes, error: errorQuotes } =
         await quotesApi.getDataByAnyColumn({
           column: "id_opportunity",
@@ -128,6 +178,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
           phases: phases,
           quotes: quotes ?? [],
           profitMargins: [],
+          detailsItems: [],
+          detailsMaterials: [],
         });
         return;
       }
@@ -141,11 +193,29 @@ export function UIProvider({ children }: { children: ReactNode }) {
         throw new Error(
           `No se pudo obtener los margenes de ganancia del id ${id} | Error message: ${errorProfitMargins}`
         );
+      // obteniendo detalles de cotizaciones
+      const idsQuotes = quotes.map((quote) => quote.id);
+      const { data: detailsItems, error: errorDetailsItems } =
+        await detailsItemsApi.getDataByEveryIds(idsQuotes, "id_quote");
+      if (errorDetailsItems) {
+        throw new Error(
+          `No se pudo obtener los detalles de las cotizaciones del id ${id} | Error message: ${errorDetailsItems}`
+        );
+      }
+      const { data: detailsMaterials, error: errorDetailsMaterials } =
+        await detailsMaterialsApi.getDataByEveryIds(idsQuotes, "id_quote");
+      if (errorDetailsMaterials) {
+        throw new Error(
+          `No se pudo obtener los detalles de los materiales del id ${id} | Error message: ${errorDetailsMaterials}`
+        );
+      }
       const dataCompleted = {
         ...data,
         phases: phases,
         quotes: quotes ?? [],
         profitMargins: profitMargins ?? [],
+        detailsItems: detailsItems ?? [],
+        detailsMaterials: detailsMaterials ?? [],
       };
       setSelectedOpportunity(dataCompleted);
     } catch (e) {
@@ -163,13 +233,60 @@ export function UIProvider({ children }: { children: ReactNode }) {
     const { id } = selectedOpportunity;
     await getOpportunity(id);
   };
-  const handleSetIsFieldsChanged = (dirtyFields: DirtyFields, isSubmitSuccessful: boolean): void => {
-    const hasChange = Object.values(dirtyFields).some((value) => value === true) || false;
+  const handleSetIsFieldsChanged = (
+    dirtyFields: DirtyFields,
+    isSubmitSuccessful: boolean
+  ): void => {
+    const hasChange =
+      Object.values(dirtyFields).some((value) => value === true) || false;
     setIsFieldsChanged?.(hasChange);
-    if(isSubmitSuccessful) {
+    if (isSubmitSuccessful) {
       setIsFieldsChanged(false);
     }
-  }
+  };
+  const getCategorizations = async () => {
+    try {
+      const { data: dataFamily, error: errorFamily } = await familyApi.getAll(
+        {}
+      );
+      if (errorFamily)
+        throw new Error(
+          `No se pudo obtener la familia | Error: ${errorFamily}`
+        );
+
+      const { data: dataCategory, error: errorCategory } =
+        await categoryApi.getAll({});
+      if (errorCategory)
+        throw new Error(
+          `No se pudo obtener los rubros | Error: ${errorCategory}`
+        );
+
+      const { data: dataSucategory, error: errorSucategory } =
+        await subcategoryApi.getAll({});
+      if (errorSucategory)
+        throw new Error(
+          `No se pudo obtener los sub-rubros | Error: ${errorSucategory}`
+        );
+      const { data: dataUnits, error: errorUnits } = await unitsApi.getAll({});
+      if (errorUnits)
+        throw new Error(
+          `No se pudo obtener las unidades | Error: ${errorUnits}`
+        );
+      setCategorizations({
+        families: dataFamily,
+        categories: dataCategory,
+        subcategories: dataSucategory,
+        units: dataUnits,
+      });
+    } catch (e) {
+      showModal({
+        title: "Error",
+        message: "Problemas al obtener datos",
+        code: String(e),
+        variant: "error",
+      });
+    }
+  };
   return (
     <UIContext.Provider
       value={{
@@ -190,7 +307,18 @@ export function UIProvider({ children }: { children: ReactNode }) {
         setIsModeEdit,
         isFieldsChanged,
         setIsFieldsChanged,
-        handleSetIsFieldsChanged
+        handleSetIsFieldsChanged,
+        categorizations,
+        setCategorizations,
+        getCategorizations,
+        selectedMaterial,
+        setSelectedMaterial,
+        openPriceModal,
+        setOpenPriceModal,
+        openSupplierModal,
+        setOpenSupplierModal,
+        selectedSupplier,
+        setSelectedSupplier
       }}
     >
       {children}

@@ -7,6 +7,8 @@ import type { ListResponse } from "~/backend/crudFactory";
 import { useForm } from "react-hook-form";
 import type { FetchResponse } from "~/components/Generals/Tables";
 import { ContainerWithTitle } from "~/components/Generals/Containers";
+import { ButtonNavigate } from "~/components/Specific/Buttons";
+import { useNavigate } from "react-router";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Materiales" },
@@ -21,20 +23,11 @@ const columns: TableColumn<MaterialsType>[] = [
   },
   {
     name: "Descripcion",
-    selector: (row) => row.descripcion,
-  },
-  {
-    name: "Material",
-    selector: (row) => row.material || "",
-    width: "150px",
-  },
-  {
-    name: "Tipo",
-    selector: (row) => row.tipo || "",
-    width: "120px",
+    selector: (row) => row.description,
   },
 ];
 export default function Materials() {
+  const navigate = useNavigate()
   const { register, watch } = useForm();
   const fetchData = async ({
     page,
@@ -93,6 +86,14 @@ export default function Materials() {
       </div>
     );
   };
+  interface HandleRowClicked {
+      (data: MaterialsType): void;
+    }
+  
+    const handleRowClicked: HandleRowClicked = (data) => {
+      //setSelectedOpportunity(null)
+      navigate(`/material/${data.id}`);
+    };
   return (
     <>
       <ContainerWithTitle title="Materiales">
@@ -101,9 +102,14 @@ export default function Materials() {
           fetchData={fetchData}
           formFilters={<FormInputs />}
           onFilter={onFilter}
-          onRowClicked={(data) => console.log(data)}
+          onRowClicked={handleRowClicked}
         />
       </ContainerWithTitle>
+      <span className="absolute bottom-8 right-8">
+        <ButtonNavigate variant="yellow" route="/new-material">
+          Nuevo Material
+        </ButtonNavigate>
+      </span>
     </>
   );
 }

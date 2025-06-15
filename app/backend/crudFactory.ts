@@ -72,7 +72,7 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
     getAll: async (options: FilterOptions): Promise<ListResponse<TFull>> => {
       // Paginacion
       const page = options.page ?? 1;
-      const pageSize = options.pageSize ?? 10;
+      const pageSize = options.pageSize ?? 100;
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
       try {
@@ -99,9 +99,10 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         if (error) throw error;
         return { data: data?.[0] ?? null, error: null };
       } catch (err) {
+        console.log(err)
         return {
           data: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error ? err : new Error('Error inesperado'),
         };
       }
     },
@@ -163,7 +164,6 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         };
       }
     },
-
     filter: async (options: FilterOptions): Promise<ListResponse<TFull>> => {
       try {
         let query = supabase.from(table).select("*", { count: "exact" });
@@ -204,6 +204,22 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
 
         if (error) throw error;
 
+        return { data: data ?? [], error: null, count };
+      } catch (err) {
+        return {
+          data: null,
+          error: err instanceof Error ? err : new Error("Error inesperado"),
+          count: null,
+        };
+      }
+    },
+    getDataByEveryIds: async (ids: number[], column: string): Promise<ListResponse<TFull>> => {
+      try {
+        const { data, error, count } = await supabase
+          .from(table)
+          .select("*", { count: "exact" })
+          .in(column, ids);
+        if (error) throw error;
         return { data: data ?? [], error: null, count };
       } catch (err) {
         return {

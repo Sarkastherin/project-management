@@ -21,7 +21,7 @@ export default function Conditions() {
     <>
       {quoteActive && (
         <ContainerToForms>
-          <ConditionsForm mode="view" defaultValues={quoteActive} />
+          <ConditionsForm defaultValues={quoteActive} />
         </ContainerToForms>
       )}
     </>

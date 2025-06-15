@@ -7,16 +7,14 @@ import {
   quotesApi,
   type QuotesType,
 } from "~/backend/dataBase";
-import { FooterForms } from "./FooterForms";
+import FooterForms from "./FooterForms";
 import { useEffect } from "react";
 
 type QuotesTypesFormProps = {
   defaultValues: QuotesType
-  mode: "edit" | "view";
 };
 export default function ConditionsForm({
   defaultValues,
-  mode,
 }: QuotesTypesFormProps) {
   const { showModal, refreshOpportunity, isModeEdit, handleSetIsFieldsChanged } = useUI();
   const {
@@ -136,7 +134,7 @@ export default function ConditionsForm({
             </div>
           </CardToggle>
         </fieldset>
-        <FooterForms />
+        <FooterForms mode="view"/>
       </form>
       <ModalClientes />
     </>

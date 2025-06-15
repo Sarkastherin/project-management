@@ -29,6 +29,7 @@ export type ClientDataType = {
 type ContactsContextType = {
   getClients: () => void;
   clients: ClientDataType[];
+  suppliers: ClientDataType[]
 };
 type ContactsProviderProps = {
   children: ReactNode;
@@ -45,6 +46,7 @@ export const useContacts = (): ContactsContextType => {
 };
 export const ContactsProvider = ({ children }: ContactsProviderProps) => {
   const [clients, setClients] = useState<Array<ClientDataType>>([]);
+  const [suppliers, setSuppliers] = useState<Array<ClientDataType>>([]);
   const getClients = async () => {
     const myClientData = [];
     try {
@@ -66,11 +68,33 @@ export const ContactsProvider = ({ children }: ContactsProviderProps) => {
       console.error("Error al obtener clientes desde función:", error);
     }
   };
+  const getSuppliers = async () => {
+    const mySupplierData = [];
+    try {
+      let page = 1;
+      const page_size = 100;
+      let has_more = true;
+      while (has_more) {
+        const response = await fetch("/.netlify/functions/proveedores", {
+          method: "POST",
+          body: JSON.stringify({ page, page_size }),
+        });
+        const data = await response.json();
+        mySupplierData.push(...data.data);
+        has_more = data.has_more;
+        page++;
+      }
+      setSuppliers(mySupplierData);
+    } catch (error) {
+      console.error("Error al obtener clientes desde función:", error);
+    }
+  };
   useEffect(() => {
     getClients();
+    getSuppliers()
   }, []);
   return (
-    <ContactsContext.Provider value={{ getClients, clients }}>
+    <ContactsContext.Provider value={{ getClients, clients, suppliers }}>
       {children}
     </ContactsContext.Provider>
   );

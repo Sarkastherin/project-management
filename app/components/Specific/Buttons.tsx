@@ -2,9 +2,9 @@ import type React from "react";
 import { Button } from "../Forms/Buttons";
 import { useNavigate } from "react-router";
 import { variants } from "../Forms/Buttons";
-import { TrashIcon } from "@heroicons/react/16/solid";
+import { TrashIcon, PlusCircleIcon } from "@heroicons/react/16/solid";
 import type { ButtonHTMLAttributes } from "react";
-type ButtonProps = {}
+type ButtonProps = {};
 export const ButtonNavigate = ({
   route,
   variant,
@@ -21,7 +21,9 @@ export const ButtonNavigate = ({
     </Button>
   );
 };
-export const ButtonDeleteIcon = ({...buttonProps}: ButtonHTMLAttributes<HTMLButtonElement>) => {
+export const ButtonDeleteIcon = ({
+  ...buttonProps
+}: ButtonHTMLAttributes<HTMLButtonElement>) => {
   return (
     <button
       type="button"
@@ -34,10 +36,26 @@ export const ButtonDeleteIcon = ({...buttonProps}: ButtonHTMLAttributes<HTMLButt
              dark:border-gray-500 dark:text-gray-500 
              dark:hover:text-red-400 dark:hover:border-red-400 
              dark:focus:text-zinc-700 dark:focus:bg-red-400 dark:focus:border-red-400"
-             {...buttonProps}
+      {...buttonProps}
     >
       <span className="sr-only">Delete</span>
       <TrashIcon className="w-4" />
+    </button>
+  );
+};
+export const ButtonAdd = ({
+  ...buttonProps
+}: ButtonHTMLAttributes<HTMLButtonElement>) => {
+  return (
+    <button
+      className="cursor-pointer text-sm font-semibold border rounded-full py-2 px-4 text-indigo-500  border-indigo-400 hover:bg-zinc-200 hover:border-zinc-200 dark:text-indigo-300  dark:border-indigo-300 dark:hover:bg-zinc-700 dark:hover:border-zinc-700"
+      type="button"
+      {...buttonProps}
+    >
+      <div className="flex gap-2">
+        <PlusCircleIcon className="w-4" />
+        <span>Agregar</span>
+      </div>
     </button>
   );
 };

@@ -1,5 +1,8 @@
 import type { Route } from "./+types/home";
 import { ButtonNavigate } from "~/components/Specific/Buttons";
+import { Button } from "~/components/Forms/Buttons";
+import { useUI } from "~/context/UIContext";
+import ModalProveedores from "~/components/Specific/ModalProveedores";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Bienvenido" },
@@ -8,9 +11,15 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const { setOpenSupplierModal } = useUI();
   return (
-    <div className="mt-20 grid place-content-center">
-      <ButtonNavigate route={"/opportunity/6"}>Go to opportunity</ButtonNavigate>
-    </div>
+    <>
+      <div className="mt-20 grid place-content-center">
+        <Button type="button" onClick={() => setOpenSupplierModal(true)}>
+          Proveedores
+        </Button>
+      </div>
+      <ModalProveedores />
+    </>
   );
 }

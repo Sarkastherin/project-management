@@ -14,6 +14,7 @@ export default [
     route("materials", "routes/materials.tsx"),
     route("settings", "routes/settings.tsx"),
     route("new-opportunity", "routes/newOpportunity.tsx"),
+    route("new-material", "routes/newMaterial.tsx"),
     ...prefix("opportunity", [
       layout("layouts/opportunity.tsx", [
         route(":id/resumen", "routes/opportunity/resumen.tsx"),
@@ -21,6 +22,11 @@ export default [
         route(":id/conditions", "routes/opportunity/conditions.tsx"),
         route(":id/quotes", "routes/opportunity/quotes.tsx"),
         route(":id/profit-margin", "routes/opportunity/profit-margin.tsx"),
+      ]),
+    ]),
+    ...prefix("material", [
+      layout("layouts/material.tsx", [
+        route(":id", "routes/material.tsx"),
       ]),
     ]),
   ]),

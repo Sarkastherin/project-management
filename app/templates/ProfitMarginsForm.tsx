@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { useUI } from "~/context/UIContext";
 import ModalClientes from "~/components/Specific/ModalClientes";
 import { useEffect} from "react";
-import { FooterForms } from "./FooterForms";
+import  FooterForms from "./FooterForms";
 import {
   type ProfitMarginInput,
   type ProfitMarginType,
@@ -131,7 +131,7 @@ export default function ProfitMarginsForm({
             </table>
           </Card>
         </fieldset>
-        <FooterForms />
+        <FooterForms mode="view"/>
       </form>
       <ModalClientes />
     </>
