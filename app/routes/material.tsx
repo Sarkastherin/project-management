@@ -16,6 +16,7 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Material() {
   const { selectedMaterial, setOpenPriceModal } = useUI();
+  //console.log(selectedMaterial.prices)
   return (
     <>
       {selectedMaterial && (
@@ -34,7 +35,7 @@ export default function Material() {
 
           <ModalPrice
             idMaterial={selectedMaterial.id}
-            defaultValues={selectedMaterial.prices}
+            defaultValues={{prices: selectedMaterial.prices}}
           />
         </>
       )}

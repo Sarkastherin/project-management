@@ -1,34 +1,49 @@
 import { Input } from "~/components/Forms/Inputs";
-import type { PricesInput, PricesType } from "~/backend/dataBase";
+import {
+  pricesApi,
+  type PricesInput,
+  type PricesType,
+} from "~/backend/dataBase";
 import { useForm, useFieldArray } from "react-hook-form";
 import { ButtonDeleteIcon, ButtonAdd } from "~/components/Specific/Buttons";
 import { Button } from "~/components/Forms/Buttons";
 import { useUI } from "~/context/UIContext";
 import ModalProveedores from "~/components/Specific/ModalProveedores";
 import { useEffect, useState } from "react";
+import { useContacts } from "~/context/ContactsContext";
 export type PricesFormType = {
-  prices: PricesType[] | PricesInput[];
+  prices: Array<PricesType | PricesInput>;
 };
 
 export default function PricesForm({
   defaultValues,
   idMaterial,
 }: {
-  defaultValues: PricesType[] | PricesInput[];
+  defaultValues: PricesFormType;
   idMaterial: number | null;
 }) {
+  const { suppliers } = useContacts();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
-  const { setOpenSupplierModal, selectedSupplier } = useUI();
+  const [pricesToDelete, setPricesToDelete] = useState<Array<PricesType["id"]>>(
+    []
+  );
+  const {
+    setOpenSupplierModal,
+    selectedSupplier,
+    showModal,
+    setOpenPriceModal,
+    refreshMaterial,
+  } = useUI();
   const {
     register,
     watch,
-    formState: { errors, dirtyFields, isSubmitSuccessful },
+    formState: { errors, dirtyFields, isSubmitSuccessful, isDirty },
     control,
     setValue,
     handleSubmit,
+    reset,
   } = useForm<PricesFormType>({
-    defaultValues: { prices: defaultValues ?? [] },
+    defaultValues: defaultValues,
   });
   const { fields, append, remove } = useFieldArray({
     control,
@@ -44,8 +59,74 @@ export default function PricesForm({
     });
   };
   const onSubmit = async (data: PricesFormType) => {
-    // Aquí harías el post a Supabase o el backend
-    console.log("Submitting precios", data);
+    
+    const defaultPrices = data.prices.filter((p) => p.default);
+    if (defaultPrices.length !== 1) {
+      showModal({
+        title: "Formulario inválido",
+        message: "Debe haber al menos un precio marcado como 'default'",
+        variant: "warning",
+      });
+      return;
+    }
+    if (!isDirty) {
+      showModal({
+        title: "Formulario sin cambios",
+        message: "No hay cambios para actualizar'",
+        variant: "information",
+      });
+      return;
+    }
+    try {
+      const { prices } = data;
+      await Promise.all(
+        prices.map(async (price, i) => {
+          const hasId = "id" in price;          
+          if (hasId && dirtyFields.prices?.[i]) {
+            const fieldsChanged = Object.keys(dirtyFields.prices[i]!);
+            const updates: Partial<PricesType> = fieldsChanged.reduce(
+              (acc, key) => {
+                return { ...acc, [key]: price[key as keyof PricesType] };
+              },
+              {} as Partial<PricesType>
+            );
+
+            const { error: errorUpdate } = await pricesApi.update({
+              id: price.id!,
+              values: updates,
+            });
+            if (errorUpdate) throw new Error(errorUpdate.message);
+          } else if (!hasId) {
+            console.log(hasId)
+            const { error: errorInsert } = await pricesApi.insertOne(price);
+            if (errorInsert) throw new Error(errorInsert.message);
+          }
+        })
+      );
+      if (pricesToDelete.length > 0) {
+        //Eliminar
+        for (const id of pricesToDelete) {
+          const { error: errorRemove } = await pricesApi.remove({ id });
+          if (errorRemove) throw new Error(errorRemove.message);
+        }
+      }
+      showModal({
+          title: "¡Todo OK!",
+          message: "Se han guardado los datos",
+          variant: "success",
+        });
+        refreshMaterial();
+        setOpenPriceModal(false);
+    } catch (e) {
+      showModal({
+        title: "Error en envío de formulario",
+        message:
+          "Hubieron algunos problemas al intentar procesar la información",
+        variant: "error",
+        code: String(e),
+      });
+    } finally {
+    }
   };
   const handlerSupplier = (index: number) => {
     setActiveIndex(index);
@@ -65,6 +146,30 @@ export default function PricesForm({
       }
     }
   }, [selectedSupplier]);
+  useEffect(() => {
+    reset(defaultValues);
+  }, []);
+  useEffect(() => {
+    if (fields.length > 0) {
+      fields.map((field, index) => {
+        const supplierInput = document.getElementById(
+          `prices.${index}.name_supplier`
+        ) as HTMLInputElement | null;
+        if (supplierInput) {
+          const supplier = suppliers.find((s) => s.id === field.id_supplier);
+          supplierInput.value = supplier ? supplier.nombre : "";
+        }
+      });
+    }
+  }, [fields]);
+  const handleRemove = (index: number) => {
+    const priceItem = defaultValues.prices[index];
+    remove(index); 
+    if (priceItem && "id" in priceItem && priceItem.id !== undefined) {
+      setPricesToDelete((prev) => [...prev, priceItem.id as number]);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="overflow-x-auto">
@@ -157,11 +262,7 @@ export default function PricesForm({
                   </label>
                 </td>
                 <td className="px-1 py-2 whitespace-nowrap">
-                  <ButtonDeleteIcon
-                    onClick={() => {
-                      remove(index);
-                    }}
-                  />
+                  <ButtonDeleteIcon onClick={() => handleRemove(index)} />
                 </td>
               </tr>
             ))}

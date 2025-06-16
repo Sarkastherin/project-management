@@ -72,10 +72,7 @@ export type PricesInput = {
   date?:string;
   history_data?: object;
 };
-export type PricesType = PricesInput & {
-  id: number;
-  created_at: string;
-};
+export type PricesType = PricesInput & CommonTypesDataBase
 export type MaterialsInput = {
   id_subcategory: number | null;
   description: string;

@@ -14,7 +14,7 @@ import type {
   SubCategoryType,
   UnitsType,
   MaterialsType,
-  PricesType
+  PricesType,
 } from "~/backend/dataBase";
 import {
   opportunityApi,
@@ -27,6 +27,8 @@ import {
   categoryApi,
   subcategoryApi,
   unitsApi,
+  materialsApi,
+  pricesApi,
 } from "~/backend/dataBase";
 
 export type OpportunitiesWithClient = OpportunityType & {
@@ -51,8 +53,8 @@ type CategorizationsProps = {
   units: UnitsType[] | null;
 };
 type SelectedMaterialType = MaterialsType & {
-  prices: PricesType[] | [] 
-}
+  prices: PricesType[] | [];
+};
 type UIContextType = {
   showModal: (modal: ModalProps) => void;
   closeModal: () => void;
@@ -62,7 +64,7 @@ type UIContextType = {
   openClientModal: boolean;
   openSupplierModal: boolean;
   openPriceModal: boolean;
-  setOpenPriceModal:React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenPriceModal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenClientModal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenSupplierModal: React.Dispatch<React.SetStateAction<boolean>>;
   selectedClient: ClientDataType | null;
@@ -93,16 +95,19 @@ type UIContextType = {
   >;
   getCategorizations: () => Promise<void>;
   selectedMaterial: SelectedMaterialType | null;
-  setSelectedMaterial: React.Dispatch<React.SetStateAction<SelectedMaterialType | null>>
+  setSelectedMaterial: React.Dispatch<
+    React.SetStateAction<SelectedMaterialType | null>
+  >;
+  getMaterial: (id: number) => Promise<void>;
+  refreshMaterial: () => Promise<void>
 };
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: ReactNode }) {
-  const [selectedSupplier, setSelectedSupplier] = useState<ClientDataType | null>(
-    null
-  );
-  const [openSupplierModal, setOpenSupplierModal] =useState<boolean>(false);
+  const [selectedSupplier, setSelectedSupplier] =
+    useState<ClientDataType | null>(null);
+  const [openSupplierModal, setOpenSupplierModal] = useState<boolean>(false);
   const [categorizations, setCategorizations] =
     useState<CategorizationsProps | null>(null);
   const [isFieldsChanged, setIsFieldsChanged] = useState<boolean>(false);
@@ -111,7 +116,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [modal, setModal] = useState<ModalProps | null>(null);
   const [theme, setTheme] = useState<ThemeProps>("dark");
   const [openClientModal, setOpenClientModal] = useState<boolean>(false);
-  const [openPriceModal, setOpenPriceModal] = useState<boolean>(false)
+  const [openPriceModal, setOpenPriceModal] = useState<boolean>(false);
   const [selectedClient, setSelectedClient] = useState<ClientDataType | null>(
     null
   );
@@ -119,7 +124,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const closeModal = () => setModal(null);
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<OpportunityAll | null>(null);
-  const [selectedMaterial, setSelectedMaterial] = useState<SelectedMaterialType | null>(null)
+  const [selectedMaterial, setSelectedMaterial] =
+    useState<SelectedMaterialType | null>(null);
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
     document.documentElement.setAttribute(
@@ -287,6 +293,41 @@ export function UIProvider({ children }: { children: ReactNode }) {
       });
     }
   };
+  const getMaterial = async (id: number) => {
+    if (!categorizations) {
+      getCategorizations();
+      return;
+    }
+    const { data: dataMaterial, error: errorMaterial } =
+      await materialsApi.getById({ id });
+    if (errorMaterial)
+      showModal({
+        title: "Error",
+        message: "No se pudo acceder al material",
+        code: String(errorMaterial),
+        variant: "error",
+      });
+    const { data: dataPrices, error: errorPrices } =
+      await pricesApi.getDataByAnyColumn({
+        column: "id_material",
+        id: id,
+      });
+    if (errorPrices)
+      showModal({
+        title: "Error",
+        message: "No se pudo acceder a los precios",
+        code: String(errorMaterial),
+        variant: "error",
+      });
+    if (!dataPrices || !dataMaterial) return;
+    const dataWithPrices = { ...dataMaterial, prices: dataPrices };
+    setSelectedMaterial(dataWithPrices);
+  };
+  const refreshMaterial = async () => {
+    if (!selectedMaterial) return;
+    const { id } = selectedMaterial;
+    await getMaterial(id);
+  };
   return (
     <UIContext.Provider
       value={{
@@ -318,7 +359,9 @@ export function UIProvider({ children }: { children: ReactNode }) {
         openSupplierModal,
         setOpenSupplierModal,
         selectedSupplier,
-        setSelectedSupplier
+        setSelectedSupplier,
+        getMaterial,
+        refreshMaterial
       }}
     >
       {children}

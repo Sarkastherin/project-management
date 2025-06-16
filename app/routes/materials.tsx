@@ -9,6 +9,7 @@ import type { FetchResponse } from "~/components/Generals/Tables";
 import { ContainerWithTitle } from "~/components/Generals/Containers";
 import { ButtonNavigate } from "~/components/Specific/Buttons";
 import { useNavigate } from "react-router";
+import { useUI } from "~/context/UIContext";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Materiales" },
@@ -27,6 +28,7 @@ const columns: TableColumn<MaterialsType>[] = [
   },
 ];
 export default function Materials() {
+  const {setSelectedMaterial} = useUI()
   const navigate = useNavigate()
   const { register, watch } = useForm();
   const fetchData = async ({
@@ -91,7 +93,7 @@ export default function Materials() {
     }
   
     const handleRowClicked: HandleRowClicked = (data) => {
-      //setSelectedOpportunity(null)
+      setSelectedMaterial(null)
       navigate(`/material/${data.id}`);
     };
   return (

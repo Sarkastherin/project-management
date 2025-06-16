@@ -1,8 +1,9 @@
 import { useUI } from "~/context/UIContext";
 import PricesForm from "~/templates/PricesForm";
 import type { PricesType, PricesInput } from "~/backend/dataBase";
+import type { PricesFormType } from "~/templates/PricesForm";
 type PricesModalType = {
-     defaultValues: PricesType[] | PricesInput[];
+     defaultValues: PricesFormType;
      idMaterial: number
 }
 export default function ModalPrice({defaultValues, idMaterial}: PricesModalType) {
