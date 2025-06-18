@@ -32,7 +32,7 @@ const menuItems = (id: number) => {
     },
     {
       title: "Cotización",
-      href: `/opportunity/${id}/quotes`,
+      href: `/opportunity/${id}/quotes/materials`,
       icon: <BanknotesIcon className="w-4" />,
     },
     {

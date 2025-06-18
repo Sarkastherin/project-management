@@ -20,14 +20,16 @@ export default [
         route(":id/resumen", "routes/opportunity/resumen.tsx"),
         route(":id/information", "routes/opportunity/information.tsx"),
         route(":id/conditions", "routes/opportunity/conditions.tsx"),
-        route(":id/quotes", "routes/opportunity/quotes.tsx"),
+        //route(":id/quotes", "routes/opportunity/quotes.tsx"),
+        layout("routes/opportunity/quotes.tsx", [
+          route(":id/quotes/items", "routes/opportunity/quotes/items.tsx"),
+          route(":id/quotes/materials", "routes/opportunity/quotes/materials.tsx"),
+        ]),
         route(":id/profit-margin", "routes/opportunity/profit-margin.tsx"),
       ]),
     ]),
     ...prefix("material", [
-      layout("layouts/material.tsx", [
-        route(":id", "routes/material.tsx"),
-      ]),
+      layout("layouts/material.tsx", [route(":id", "routes/material.tsx")]),
     ]),
   ]),
 ] satisfies RouteConfig;

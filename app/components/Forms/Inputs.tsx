@@ -14,13 +14,15 @@ type CommonInputsProps = {
   label?: string;
   register?: UseFormRegisterReturn;
   error?: string;
+  
 };
-type InputProps = CommonInputsProps & InputHTMLAttributes<HTMLInputElement>;
+type InputProps = CommonInputsProps & InputHTMLAttributes<HTMLInputElement> & {ref?:React.Ref<HTMLInputElement>};
 export const Input = ({
   label,
   id,
   register,
   error,
+  ref,
   ...inputProps
 }: InputProps): JSX.Element => {
   return (
@@ -34,13 +36,16 @@ export const Input = ({
       </span>
 
       <input
+        ref={ref}
         id={id}
         className={`${basesClass(error ?? "")}`}
         {...inputProps}
         {...register}
       />
       {error && (
-        <span className="block mt-0.5 text-red-500 text-xs dark:text-red-400">{error}</span>
+        <span className="block mt-0.5 text-red-500 text-xs dark:text-red-400">
+          {error}
+        </span>
       )}
     </label>
   );
@@ -83,7 +88,9 @@ export const Select = ({
             {children}
           </select>
           {error && (
-            <span className="block mt-0.5 text-red-500 text-xs dark:text-red-400">{error}</span>
+            <span className="block mt-0.5 text-red-500 text-xs dark:text-red-400">
+              {error}
+            </span>
           )}
           <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
             <svg

@@ -4,16 +4,16 @@ import { useNavigate } from "react-router";
 import { variants } from "../Forms/Buttons";
 import { TrashIcon, PlusCircleIcon } from "@heroicons/react/16/solid";
 import type { ButtonHTMLAttributes } from "react";
-type ButtonProps = {};
+type ButtonProps = & {
+  route: string;
+  variant?: keyof typeof variants;
+  children: React.ReactNode;
+};
 export const ButtonNavigate = ({
   route,
   variant,
   children,
-}: {
-  route: string;
-  variant?: keyof typeof variants;
-  children: React.ReactNode;
-}) => {
+}: ButtonProps) => {
   const navigate = useNavigate();
   return (
     <Button type="button" variant={variant} onClick={() => navigate(route)}>
@@ -48,7 +48,7 @@ export const ButtonAdd = ({
 }: ButtonHTMLAttributes<HTMLButtonElement>) => {
   return (
     <button
-      className="cursor-pointer text-sm font-semibold border rounded-full py-2 px-4 text-indigo-500  border-indigo-400 hover:bg-zinc-200 hover:border-zinc-200 dark:text-indigo-300  dark:border-indigo-300 dark:hover:bg-zinc-700 dark:hover:border-zinc-700"
+      className="cursor-pointer text-sm font-semibold border rounded-full py-2 px-4 text-indigo-500  border-indigo-400 hover:bg-zinc-200 hover:border-zinc-200 dark:text-indigo-300  dark:border-indigo-300 dark:hover:bg-zinc-700 dark:hover:border-zinc-700 disabled:bg-gray-600 disabled:hover:bg-gray-600 disabled:border-none disabled:cursor-not-allowed"
       type="button"
       {...buttonProps}
     >

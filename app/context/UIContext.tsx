@@ -52,7 +52,7 @@ type CategorizationsProps = {
   subcategories: SubCategoryType[] | null;
   units: UnitsType[] | null;
 };
-type SelectedMaterialType = MaterialsType & {
+export type SelectedMaterialType = MaterialsType & {
   prices: PricesType[] | [];
 };
 type UIContextType = {
@@ -64,9 +64,11 @@ type UIContextType = {
   openClientModal: boolean;
   openSupplierModal: boolean;
   openPriceModal: boolean;
+  openMaterialsModal: boolean;
   setOpenPriceModal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenClientModal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenSupplierModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenMaterialsModal: React.Dispatch<React.SetStateAction<boolean>>;
   selectedClient: ClientDataType | null;
   setSelectedClient: React.Dispatch<
     React.SetStateAction<ClientDataType | null>
@@ -86,8 +88,8 @@ type UIContextType = {
   isFieldsChanged: boolean;
   setIsFieldsChanged: React.Dispatch<React.SetStateAction<boolean>>;
   handleSetIsFieldsChanged: (
-    dirtyFields: DirtyFields,
-    isSubmitSuccessful: boolean
+    isSubmitSuccessful: boolean,
+    isDirty: boolean
   ) => void;
   categorizations: CategorizationsProps | null;
   setCategorizations: React.Dispatch<
@@ -99,12 +101,19 @@ type UIContextType = {
     React.SetStateAction<SelectedMaterialType | null>
   >;
   getMaterial: (id: number) => Promise<void>;
-  refreshMaterial: () => Promise<void>
+  refreshMaterial: () => Promise<void>;
+  selectedPhase: number | null;
+  setSelectedPhase: React.Dispatch<React.SetStateAction<number | null>>;
+  activeType: "materiales" | "mano de obra" | "subcontratos" | "otros";
+  setActiveType:React.Dispatch<React.SetStateAction<"materiales" | "mano de obra" | "subcontratos" | "otros">>;
 };
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: ReactNode }) {
+  const [activeType, setActiveType] = useState<
+    "materiales" | "mano de obra" | "subcontratos" | "otros"
+  >("materiales");
   const [selectedSupplier, setSelectedSupplier] =
     useState<ClientDataType | null>(null);
   const [openSupplierModal, setOpenSupplierModal] = useState<boolean>(false);
@@ -116,6 +125,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [modal, setModal] = useState<ModalProps | null>(null);
   const [theme, setTheme] = useState<ThemeProps>("dark");
   const [openClientModal, setOpenClientModal] = useState<boolean>(false);
+  const [openMaterialsModal,setOpenMaterialsModal] = useState<boolean>(false);
   const [openPriceModal, setOpenPriceModal] = useState<boolean>(false);
   const [selectedClient, setSelectedClient] = useState<ClientDataType | null>(
     null
@@ -126,6 +136,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
     useState<OpportunityAll | null>(null);
   const [selectedMaterial, setSelectedMaterial] =
     useState<SelectedMaterialType | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
     document.documentElement.setAttribute(
@@ -240,12 +251,10 @@ export function UIProvider({ children }: { children: ReactNode }) {
     await getOpportunity(id);
   };
   const handleSetIsFieldsChanged = (
-    dirtyFields: DirtyFields,
-    isSubmitSuccessful: boolean
+    isSubmitSuccessful: boolean,
+    isDirty: boolean
   ): void => {
-    const hasChange =
-      Object.values(dirtyFields).some((value) => value === true) || false;
-    setIsFieldsChanged?.(hasChange);
+    setIsFieldsChanged?.(isDirty);
     if (isSubmitSuccessful) {
       setIsFieldsChanged(false);
     }
@@ -361,7 +370,13 @@ export function UIProvider({ children }: { children: ReactNode }) {
         selectedSupplier,
         setSelectedSupplier,
         getMaterial,
-        refreshMaterial
+        refreshMaterial,
+        selectedPhase,
+        setSelectedPhase,
+        activeType,
+        setActiveType,
+        openMaterialsModal,
+        setOpenMaterialsModal
       }}
     >
       {children}

@@ -79,6 +79,7 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         const { data, error, count } = await supabase
           .from(table)
           .select("*", { count: "exact" })
+          .order("id", { ascending: true })
           .range(from, to);
         if (error) throw error;
         return { data: data ?? [], error: null, count };
@@ -99,10 +100,10 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         if (error) throw error;
         return { data: data?.[0] ?? null, error: null };
       } catch (err) {
-        console.log(err)
+        console.log(err);
         return {
           data: null,
-          error: err instanceof Error ? err : new Error('Error inesperado'),
+          error: err instanceof Error ? err : new Error("Error inesperado"),
         };
       }
     },
@@ -124,7 +125,7 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         return {
           data: null,
           error: err instanceof Error ? err : new Error("Error inesperado"),
-          count: null
+          count: null,
         };
       }
     },
@@ -206,6 +207,7 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
 
         return { data: data ?? [], error: null, count };
       } catch (err) {
+        console.log(err)
         return {
           data: null,
           error: err instanceof Error ? err : new Error("Error inesperado"),
@@ -213,7 +215,10 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         };
       }
     },
-    getDataByEveryIds: async (ids: number[], column: string): Promise<ListResponse<TFull>> => {
+    getDataByEveryIds: async (
+      ids: number[],
+      column: string
+    ): Promise<ListResponse<TFull>> => {
       try {
         const { data, error, count } = await supabase
           .from(table)

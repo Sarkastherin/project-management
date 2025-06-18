@@ -5,13 +5,13 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { useUI } from "~/context/UIContext";
 import ModalClientes from "~/components/Specific/ModalClientes";
 import { quotesApi, type QuotesType } from "~/backend/dataBase";
-import  FooterForms from "./FooterForms";
+import FooterForms from "./FooterForms";
 import { useEffect, useState } from "react";
 import {
   detailsItemsApi,
   type DetailsItemsType,
   type DetailsMaterialsType,
-  type PhasesType
+  type PhasesType,
 } from "~/backend/dataBase";
 import { ButtonAdd, ButtonDeleteIcon } from "~/components/Specific/Buttons";
 import { TableDetailsQuotes } from "./TableDetailsQuotes";
@@ -20,18 +20,21 @@ const roundToPrecision = (value: number, decimalCount: number) => {
   return Math.round((value + Number.EPSILON) * pow) / pow;
 };
 type DefaultValuesType = {
-  id_phase: number;
+  //id_phase: number;
   items?: DetailsItemsType[];
   materials?: DetailsMaterialsType[];
 };
 type QuotesTypesFormProps = {
   defaultValues: DefaultValuesType;
-  phases: PhasesType[]
+  phases: PhasesType[];
 };
-export default function QuotesForm({ defaultValues, phases }: QuotesTypesFormProps) {
+export default function QuotesForm({
+  defaultValues,
+  phases,
+}: QuotesTypesFormProps) {
   const [activeType, setActiveType] = useState<
     "materiales" | "mano de obra" | "subcontratos" | "otros"
-  >("subcontratos");
+  >("materiales");
   const {
     showModal,
     refreshOpportunity,
@@ -40,7 +43,7 @@ export default function QuotesForm({ defaultValues, phases }: QuotesTypesFormPro
   } = useUI();
   const {
     register,
-    formState: { errors, dirtyFields, isSubmitSuccessful },
+    formState: { errors, dirtyFields, isSubmitSuccessful, isDirty },
     handleSubmit,
     control,
     watch,
@@ -71,12 +74,11 @@ export default function QuotesForm({ defaultValues, phases }: QuotesTypesFormPro
       message: `Procesando requerimiento`,
     });
     try {
-      console.log("formData", formData);
-      showModal({
-        title: "¡Todo OK!",
-        message: `Oportunidad actualizada correctamente`,
-        variant: "success",
-      });
+      if (activeType === "materiales") {
+        console.log("submt materiales");
+      } else {
+        console.log("submit items", formData);
+      }
     } catch (e) {
       showModal({
         title: "Error al actualizar",
@@ -87,10 +89,20 @@ export default function QuotesForm({ defaultValues, phases }: QuotesTypesFormPro
     } finally {
       refreshOpportunity();
     }
+
+    /*  
+    try {
+      console.log("formData", formData);
+      showModal({
+        title: "¡Todo OK!",
+        message: `Oportunidad actualizada correctamente`,
+        variant: "success",
+      });
+    }  */
   };
   useEffect(() => {
-    handleSetIsFieldsChanged(dirtyFields, isSubmitSuccessful);
-  }, [dirtyFields, isSubmitSuccessful]);
+    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
+  }, [isSubmitSuccessful, isDirty]);
   const types: {
     key: "mano de obra" | "subcontratos" | "otros";
     label: string;
@@ -99,7 +111,8 @@ export default function QuotesForm({ defaultValues, phases }: QuotesTypesFormPro
     { key: "subcontratos", label: "Subcontratos" },
     { key: "otros", label: "Otros" },
   ];
-  const selectedPhase = watch("id_phase");
+  const inputElement = document.getElementById("id_phase") as HTMLInputElement | null;
+  const selectedPhase = inputElement ? Number(inputElement.value) : 0; //watch("id_phase");
   const handleAddItem = () => {
     if (selectedPhase > 0) {
       appendItem({
@@ -150,51 +163,46 @@ export default function QuotesForm({ defaultValues, phases }: QuotesTypesFormPro
   ];
   return (
     <>
-      <form
-        className=" flex flex-col gap-6"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        <fieldset disabled={!isModeEdit}>
-          <section className="flex gap-4">
-            {/* Selector de fase */}
-            <div className="w-2/3">
-              <Select {...register("id_phase", { valueAsNumber: true })}>
-                {phases.map((phase) => (
-                  <option key={phase.id} value={phase.id}>
-                    {phase.name}
-                  </option>
-                ))}
-              </Select>
+      <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
+        <section className="flex gap-4">
+          {/* Selector de fase */}
+          <div className="w-2/3">
+            <Select defaultValue={phases[0].id} id="id_phase" /* {...register("id_phase", { valueAsNumber: true })} */>
+              {phases.map((phase) => (
+                <option key={phase.id} value={phase.id}>
+                  {phase.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {/* Tabs por tipo */}
+          <div className="w-full flex gap-2">
+            <div className="w-1/4">
+              <Button
+                type="button"
+                variant={activeType === "materiales" ? "primary" : "secondary"}
+                className="w-full"
+                onClick={handleShowMaterials}
+              >
+                {"Materiales"}
+              </Button>
             </div>
-            {/* Tabs por tipo */}
-            <div className="w-full flex gap-2">
-              <div className="w-1/4">
+            {types.map((t) => (
+              <div className="w-1/4" key={t.key}>
                 <Button
                   type="button"
-                  variant={
-                    activeType === "materiales" ? "primary" : "secondary"
-                  }
+                  onClick={() => setActiveType(t.key)}
+                  variant={activeType === t.key ? "primary" : "secondary"}
                   className="w-full"
-                  onClick={handleShowMaterials}
                 >
-                  {"Materiales"}
+                  {t.label}
                 </Button>
               </div>
-              {types.map((t) => (
-                <div className="w-1/4" key={t.key}>
-                  <Button
-                    type="button"
-                    onClick={() => setActiveType(t.key)}
-                    variant={activeType === t.key ? "primary" : "secondary"}
-                    className="w-full"
-                  >
-                    {t.label}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </section>
-          {/* Lista de ítems por tipo y fase */}
+            ))}
+          </div>
+        </section>
+        {/* Lista de ítems por tipo y fase */}
+        <fieldset disabled={!isModeEdit}>
           <div className="overflow-x-auto">
             {activeType === "materiales" ? (
               <TableDetailsQuotes
@@ -314,14 +322,13 @@ export default function QuotesForm({ defaultValues, phases }: QuotesTypesFormPro
               </TableDetailsQuotes>
             )}
           </div>
-          {/* Botón para agregar nuevo ítem */}
           {activeType === "materiales" ? (
             <ButtonAdd title="Agregar Material" onClick={handleAddMaterial} />
           ) : (
             <ButtonAdd title="Agregar Item" onClick={handleAddItem} />
           )}
         </fieldset>
-        <FooterForms mode="view"/>
+        <FooterForms mode="view" />
       </form>
       <ModalClientes />
     </>

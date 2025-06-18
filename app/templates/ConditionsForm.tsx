@@ -19,7 +19,7 @@ export default function ConditionsForm({
   const { showModal, refreshOpportunity, isModeEdit, handleSetIsFieldsChanged } = useUI();
   const {
     register,
-    formState: { dirtyFields, isSubmitting, isSubmitSuccessful },
+    formState: { dirtyFields, isSubmitting, isSubmitSuccessful, isDirty },
     handleSubmit,
   } = useForm<QuotesType>({
     defaultValues: defaultValues ?? {},
@@ -65,8 +65,8 @@ export default function ConditionsForm({
     { description: "Otro" },
   ];
   useEffect(() => {
-    handleSetIsFieldsChanged(dirtyFields, isSubmitSuccessful);
-  }, [dirtyFields, isSubmitSuccessful]);
+    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
+  }, [isSubmitSuccessful, isDirty]);
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>

@@ -43,7 +43,7 @@ export default function OpportunityForm({
   const {
     register,
     watch,
-    formState: { errors, dirtyFields, isSubmitSuccessful },
+    formState: { errors, dirtyFields, isSubmitSuccessful, isDirty },
     control,
     setValue,
     handleSubmit,
@@ -195,8 +195,8 @@ export default function OpportunityForm({
   };
   const isLost = watch("status") === "Perdida";
   useEffect(() => {
-    handleSetIsFieldsChanged(dirtyFields, isSubmitSuccessful);
-  }, [dirtyFields, isSubmitSuccessful]);
+    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
+  }, [isSubmitSuccessful, isDirty]);
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>

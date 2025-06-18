@@ -10,102 +10,36 @@ import { ContainerWithTitle } from "~/components/Generals/Containers";
 import { ButtonNavigate } from "~/components/Specific/Buttons";
 import { useNavigate } from "react-router";
 import { useUI } from "~/context/UIContext";
+import { useEffect } from "react";
+import { MaterialTable } from "~/templates/MaterialTable";
+import type { HandleRowClicked } from "~/templates/MaterialTable";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Materiales" },
     { name: "Materiales", content: "Materiales" },
   ];
 }
-const columns: TableColumn<MaterialsType>[] = [
-  {
-    name: "Id",
-    selector: (row) => row.id,
-    width: "80px",
-  },
-  {
-    name: "Descripcion",
-    selector: (row) => row.description,
-  },
-];
+
 export default function Materials() {
-  const {setSelectedMaterial} = useUI()
-  const navigate = useNavigate()
-  const { register, watch } = useForm();
-  const fetchData = async ({
-    page,
-    perPage,
-  }: FetchResponse): Promise<ListResponse<MaterialsType>> => {
-    const { data, error, count } = await materialsApi.getAll({
-      page: page,
-      pageSize: perPage,
-    });
-    return { data, error, count };
-  };
-  const onFilter = async (
-    perPage: number
-  ): Promise<ListResponse<MaterialsType>> => {
-    const filterOptions = {
-      searchText: watch("descripcion"),
-      columnsToSearch: ["descripcion"],
-      exactFilters: { material: watch("material"), tipo: watch("tipo") },
-      pageSize: perPage,
-    };
-    const { data, error, count } = await materialsApi.filter(filterOptions);
-    if (error) {
-      alert(error);
+  const { setSelectedMaterial, categorizations, getCategorizations } = useUI();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!categorizations) {
+      getCategorizations();
     }
-    return { data, error, count };
+  }, []);
+  const handleRowClicked: HandleRowClicked = (data) => {
+    setSelectedMaterial(null);
+    navigate(`/material/${data.id}`);
   };
-  const FormInputs = () => {
-    return (
-      <div className="grid grid-cols-4 gap-2 w-full">
-        <Select selectText="Selecciona una material" {...register("material")}>
-          {["INOXIDABLE", "ACERO AL CARBONO", "GALVANIZADO"].map((family) => (
-            <option key={family} value={family}>
-              {family}
-            </option>
-          ))}
-        </Select>
-        <Select selectText="Selecciona un tipo" {...register("tipo")}>
-          {["Caño", "Chapa", "Rubro C"].map((rubro) => (
-            <option key={rubro} value={rubro}>
-              {rubro}
-            </option>
-          ))}
-        </Select>
-        <Select selectText="Selecciona un subrubro">
-          {["Sub-rubro A", "Sub-rubro B", "Sub-rubro C"].map((subrubro) => (
-            <option key={subrubro} value={subrubro}>
-              {subrubro}
-            </option>
-          ))}
-        </Select>
-        <Input
-          type="search"
-          placeholder="Buscar por descripcion"
-          {...register("descripcion")}
-        />
-      </div>
-    );
-  };
-  interface HandleRowClicked {
-      (data: MaterialsType): void;
-    }
-  
-    const handleRowClicked: HandleRowClicked = (data) => {
-      setSelectedMaterial(null)
-      navigate(`/material/${data.id}`);
-    };
   return (
     <>
-      <ContainerWithTitle title="Materiales">
-        <MyDataTable
-          columns={columns}
-          fetchData={fetchData}
-          formFilters={<FormInputs />}
-          onFilter={onFilter}
-          onRowClicked={handleRowClicked}
-        />
+      <ContainerWithTitle title="Materiales" width="w-full">
+        {categorizations ? (
+          <MaterialTable handleRowClicked={handleRowClicked} />
+        ) : (
+          <p className="text-center font-medium text-2xl">Cargando Datos</p>
+        )}
       </ContainerWithTitle>
       <span className="absolute bottom-8 right-8">
         <ButtonNavigate variant="yellow" route="/new-material">

@@ -19,7 +19,7 @@ export default function ProfitMarginsForm({
   const { isModeEdit, handleSetIsFieldsChanged  } = useUI();
   const {
     register,
-    formState: { dirtyFields, isSubmitSuccessful },
+    formState: { dirtyFields, isSubmitSuccessful, isDirty },
     handleSubmit,
   } = useForm<ProfitMarginInput>({
     defaultValues: defaultValues ?? {},
@@ -28,9 +28,9 @@ export default function ProfitMarginsForm({
 
     console.log("formData", formData);
   };
-  useEffect(() => {
-    handleSetIsFieldsChanged(dirtyFields, isSubmitSuccessful);
-  }, [dirtyFields, isSubmitSuccessful]);
+ useEffect(() => {
+    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
+  }, [isSubmitSuccessful, isDirty]);
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>

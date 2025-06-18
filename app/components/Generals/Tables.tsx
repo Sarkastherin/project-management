@@ -44,6 +44,7 @@ type MyDataTableProps<T extends object> = {
   formFilters: React.ReactNode;
   onFilter: (perPage: number) => Promise<ListResponse<T>>;
   onRowClicked: (data: T) => void;
+  initialPerPage?: number
 };
 
 export default function MyDataTable<T extends object>({
@@ -52,13 +53,14 @@ export default function MyDataTable<T extends object>({
   formFilters,
   onFilter,
   onRowClicked,
+  initialPerPage
 }: MyDataTableProps<T>): JSX.Element {
   const [ClientComponent, setClientComponent] = useState<any>(null);
   const { theme } = useUI();
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState<number>(0);
   const [dataTable, setDataTable] = useState<T[]>([]);
-  const [perPage, setPerPage] = useState<number>(30);
+  const [perPage, setPerPage] = useState<number>(initialPerPage || 30);
 
   const fetching = async (page: number) => {
     setLoading(true);
