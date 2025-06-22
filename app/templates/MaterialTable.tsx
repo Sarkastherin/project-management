@@ -1,22 +1,16 @@
 import type { TableColumn } from "react-data-table-component";
 import type { MaterialsType } from "~/backend/dataBase";
-import MyDataTable from "~/components/Generals/Tables";
-import type { FetchResponse } from "~/components/Generals/Tables";
-import type { ListResponse } from "~/backend/crudFactory";
-import { materialsApi } from "~/backend/dataBase";
 import { useUI } from "~/context/UIContext";
-import { useEffect, useRef } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { Input } from "~/components/Forms/Inputs";
-import type { SelectedMaterialType } from "~/context/UIContext";
+import DataTable from "react-data-table-component";
+import type { MaterialTypeDB } from "~/context/UIContext";
+import { customStyles } from "~/components/Generals/Tables";
+import { useMaterialsRealtime } from "~/backend/realTime";
 export type HandleRowClicked = {
-  (data: MaterialsType ): void;
+  (data: MaterialTypeDB): void;
 };
-type MaterialTableProps = MaterialsType & {
-  name_subcategory: string;
-  name_category: string;
-  name_family: string;
-};
-const columns: TableColumn<MaterialTableProps>[] = [
+const columns: TableColumn<MaterialTypeDB>[] = [
   {
     name: "Id",
     selector: (row) => row.id,
@@ -28,107 +22,67 @@ const columns: TableColumn<MaterialTableProps>[] = [
   },
   {
     name: "Sub-rubro",
-    selector: (row) => row.name_subcategory,
+    selector: (row) => row.view_categorizations.description_subcategory,
     width: "250px",
   },
   {
     name: "Rubro",
-    selector: (row) => row.name_category,
+    selector: (row) => row.view_categorizations.description_category,
     width: "250px",
   },
   {
     name: "Familia",
-    selector: (row) => row.name_family,
+    selector: (row) => row.view_categorizations.description_family,
     width: "250px",
   },
 ];
 export const MaterialTable = ({
   handleRowClicked,
-  initialPerPage
+  paginationPerPage,
 }: {
   handleRowClicked: HandleRowClicked;
-  initialPerPage?: number
+  paginationPerPage?: number;
 }) => {
-  const inputFilterText = useRef<HTMLInputElement>(null);
-  const { categorizations, getCategorizations } = useUI();
+  const [filterData, setFilterData] = useState<MaterialTypeDB[] | null>(null);
+  const { getMaterials, materials, theme } = useUI();
   useEffect(() => {
-    if (!categorizations) {
-      getCategorizations();
-    }
+    if (!materials) getMaterials();
   }, []);
-  const mapMaterialWithCategories = (
-    data: MaterialsType[]
-  ): MaterialTableProps[] => {
-    const { families, categories, subcategories } = categorizations || {};
-    const newData: MaterialTableProps[] =
-      data?.map((material) => {
-        const id_subcategory = material.id_subcategory;
-        const subcategory = subcategories?.find(
-          (subcategory) => subcategory.id === id_subcategory
-        );
-        const id_category = subcategory?.id_category;
-        const category = categories?.find(
-          (category) => category.id === id_category
-        );
-        const id_family = category?.id_family;
-        const family = families?.find((family) => family.id === id_family);
-        return {
-          ...material,
-          name_subcategory: subcategory?.description || "",
-          name_category: category?.description || "",
-          name_family: family?.description || "",
-        };
-      }) || [];
-    return newData;
-  };
-  const fetchData = async ({
-    page,
-    perPage,
-  }: FetchResponse): Promise<ListResponse<MaterialTableProps>> => {
-    const { data, error, count } = await materialsApi.getAll({
-      page: page,
-      pageSize: perPage,
-    });
-    const { families, categories, subcategories } = categorizations || {};
-    const newData = mapMaterialWithCategories(data ?? []);
-    return { data: newData, error, count };
-  };
-  const onFilter = async (
-    perPage: number
-  ): Promise<ListResponse<MaterialTableProps>> => {
-    //const inputElement = document.
-    const filterOptions = {
-      searchText: inputFilterText.current ? inputFilterText.current.value : "", //watch("description"),
-      columnsToSearch: ["description"],
-      pageSize: perPage,
-    };
-    const { data, error, count } = await materialsApi.filter(filterOptions);
-    if (error) {
-      alert(error);
+  useEffect(() => {
+    if (materials) {
+      setFilterData(materials);
     }
-    const newData = mapMaterialWithCategories(data ?? []);
-    return { data: newData, error, count };
+  }, [materials]);
+  const onFilter = (e: ChangeEvent<HTMLInputElement>) => {
+    const target = e.target;
+    const searchText = target.value;
+    const searchData = materials?.filter((item) =>
+      item.description
+        .toLocaleLowerCase()
+        .includes(searchText.toLocaleLowerCase())
+    );
+    setFilterData(searchData || []);
   };
-  const FormInputs = () => {
+  if (filterData)
     return (
-      <div className="w-full">
+      <>
         <Input
-          ref={inputFilterText}
-          id="description"
           type="search"
           placeholder="Buscar por descripcion"
+          onChange={onFilter}
         />
-      </div>
+        <DataTable
+          columns={columns}
+          data={filterData}
+          customStyles={customStyles}
+          theme={theme}
+          pagination
+          paginationPerPage={paginationPerPage}
+          onRowClicked={handleRowClicked}
+          pointerOnHover
+          highlightOnHover
+        />
+      </>
     );
-  };
-  return (
-    <MyDataTable
-      columns={columns}
-      fetchData={fetchData}
-      formFilters={<FormInputs />}
-      onFilter={onFilter}
-      onRowClicked={handleRowClicked}
-      initialPerPage={initialPerPage}
-    />
-  );
+  return <p>Cargando datos</p>;
 };

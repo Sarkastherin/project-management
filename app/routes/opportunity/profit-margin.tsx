@@ -17,13 +17,13 @@ export function meta({}: Route.MetaArgs) {
 
 export default function ProfitMargins() {
   const { selectedOpportunity } = useUI();
-  const { quotes, profitMargins } = selectedOpportunity || {};
+  const { quotes, profit_margins } = selectedOpportunity || {};
   if (quotes?.length === 0) return <ButtonCreateQuote />;
-  else if (profitMargins?.length === 0) {
+  else if (profit_margins?.length === 0) {
     return <ButtonNavigateDetails />;
   }
   const { id } = quotes?.find((quote) => quote.active) || {};
-  const profitMargin = profitMargins?.find(
+  const profitMargin = profit_margins?.find(
     (margin: ProfitMarginType) => margin.id_quote === id
   );
   return (

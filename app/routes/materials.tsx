@@ -36,7 +36,7 @@ export default function Materials() {
     <>
       <ContainerWithTitle title="Materiales" width="w-full">
         {categorizations ? (
-          <MaterialTable handleRowClicked={handleRowClicked} />
+          <MaterialTable handleRowClicked={handleRowClicked} paginationPerPage={30}/>
         ) : (
           <p className="text-center font-medium text-2xl">Cargando Datos</p>
         )}

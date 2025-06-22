@@ -1,21 +1,13 @@
 import { Button } from "../Forms/Buttons";
-import { useState, useEffect } from "react";
-import type { ClientDataType } from "~/context/ContactsContext";
-import type { TableColumn } from "react-data-table-component";
-import { useContacts } from "~/context/ContactsContext";
-import DataTable from "react-data-table-component";
-import { customStyles } from "../Generals/Tables";
 import { useUI } from "~/context/UIContext";
 import { MaterialTable } from "~/templates/MaterialTable";
 import type { HandleRowClicked } from "~/templates/MaterialTable";
-import type { SelectedMaterialType } from "~/context/UIContext";
 
 export default function ModalMateriales() {
-  const { openMaterialsModal, setOpenMaterialsModal, getMaterial } =
+  const { openMaterialsModal, setOpenMaterialsModal, setSelectedMaterial } =
     useUI();
   const handleRowClicked: HandleRowClicked = (data) => {
-    const {id} = data;
-    getMaterial(id)
+    setSelectedMaterial(data)
     setOpenMaterialsModal(false)
   };
   return (
@@ -61,7 +53,7 @@ export default function ModalMateriales() {
         <div className="mt-4">
           <MaterialTable
             handleRowClicked={handleRowClicked}
-            initialPerPage={10}
+            paginationPerPage={10}
           />
         </div>
 

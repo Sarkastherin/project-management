@@ -4,7 +4,7 @@ export const variants = {
   blue: "border-blue-600 bg-blue-600 text-white hover:text-blue-600 hover:border-blue-600 dark:border-blue-500 dark:bg-blue-500 dark:text-zinc-800 dark:hover:text-blue-500 dark:hover:border-blue-500",
   yellow: "border-yellow-500 bg-yellow-500 text-zinc-800 hover:text-yellow-500 hover:border-yellow-500",
   secondary: "border-gray-400 bg-gray-400 text-white hover:text-gray-400 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-600 dark:text-zinc-800 dark:hover:text-gray-600 dark:hover:border-gray-600",
-  danger: "bg-red-500 border-red-500 text-white",
+  danger: "border-red-600 bg-red-600 text-white hover:text-red-600 hover:border-red-600 dark:border-red-400 dark:bg-red-400 dark:text-zinc-800 dark:hover:text-red-400 dark:hover:border-red-400",
   indigo: "bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-500",
   danger_outline:
     "border-red-500 text-red-500 hover:bg-red-500 hover:text-white",

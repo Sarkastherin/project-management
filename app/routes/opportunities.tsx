@@ -15,6 +15,12 @@ import { StatusOptions } from "~/components/Specific/StatusOptions";
 import { useNavigate } from "react-router";
 import type { OpportunitiesWithClient } from "~/context/UIContext";
 import { useUI } from "~/context/UIContext";
+import DataTable from "react-data-table-component";
+import type { ChangeEvent, FormEvent } from "react";
+import type { OpportunitiesTypeDB } from "~/context/UIContext";
+import { useState, useEffect } from "react";
+import { customStyles } from "~/components/Generals/Tables";
+import { Button } from "~/components/Forms/Buttons";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Oportunidades" },
@@ -47,8 +53,8 @@ const columns: TableColumn<OpportunitiesWithClient>[] = [
   },
   {
     name: "Cliente",
-    selector: (row) => row.client.nombre || "",
-    width: "210px",
+    selector: (row) => row.client?.nombre || "",
+    width: "270px",
   },
   {
     name: "Status",
@@ -61,109 +67,93 @@ const columns: TableColumn<OpportunitiesWithClient>[] = [
     width: "120px",
   },
 ];
+type FilterOpportunityType = {
+  name_oportunity: string;
+  name_client: string;
+  status_opportunity: string;
+};
 export default function Opportunities() {
-  const {setSelectedOpportunity} = useUI()
-  const navigate = useNavigate()
+  const [filterData, setFilterData] = useState<OpportunitiesTypeDB[] | null>(
+    null
+  );
+  const { getOpportunities, opportunities, theme, setSelectedOpportunity } =
+    useUI();
+
+  const navigate = useNavigate();
   const { clients } = useContacts();
-  const { register, watch } = useForm();
-  function mapOpportunitiesWithClients(
-    opportunities: OpportunityType[],
-    clients: ClientDataType[]
-  ): OpportunitiesWithClient[] {
-    return opportunities.map((opportunity) => {
-      const client = clients.find((c) => c.id === opportunity.id_client);
-      return { ...opportunity, client: client ?? ({} as ClientDataType) };
-    });
-  }
-  const fetchData = async ({
-    page,
-    perPage,
-  }: FetchResponse): Promise<ListResponse<OpportunitiesWithClient>> => {
-    if (clients.length > 0) {
-      const {
-        data: opportunities,
-        error,
-        count,
-      } = await opportunityApi.getAll({
-        page: page,
-        pageSize: perPage,
-      });
-      const myNewData = opportunities
-        ? mapOpportunitiesWithClients(opportunities, clients)
-        : [];
-      return { data: myNewData, error, count };
-    }
-    return { data: null, error: null, count: null };
-  };
-  const onFilter = async (
-    perPage: number
-  ): Promise<ListResponse<OpportunitiesWithClient>> => {
-    const filterOptions = {
-      searchText: watch("descripcion"),
-      columnsToSearch: ["nombre", "cliente"],
-      exactFilters: { material: watch("material"), tipo: watch("tipo") },
-      pageSize: perPage,
-    };
-    if (clients.length > 0) {
-      const {
-        data: opportunities,
-        error,
-        count,
-      } = await opportunityApi.filter(filterOptions);
-      const myNewData = opportunities
-        ? mapOpportunitiesWithClients(opportunities, clients)
-        : [];
-      return { data: myNewData, error, count };
-    }
-    return { data: null, error: null, count: null };
-  };
-  const FormInputs = () => {
-    return (
-      <div className="grid grid-cols-4 gap-2 w-full">
-        <div className="col-span-2">
-          <Input
-            type="search"
-            placeholder="Buscar por nombre oportunidad"
-            {...register("opportunity")}
-          />
-        </div>
-        <Input
-          type="search"
-          placeholder="Buscar por cliente"
-          {...register("client")}
-        />
-        <Select selectText="Selecciona un status">
-          <StatusOptions/>
-        </Select>
-      </div>
-    );
-  };
+  const { register, watch, handleSubmit } = useForm<FilterOpportunityType>();
+  useEffect(() => {
+    if (!opportunities) getOpportunities();
+  }, []);
   interface HandleRowClicked {
     (data: OpportunitiesWithClient): void;
   }
-
+  const onFilter = (data: FilterOpportunityType) => {
+    const search = opportunities?.filter((item) => {
+      return (
+        item.name.toLocaleLowerCase().includes(data.name_oportunity.toLocaleLowerCase()) &&
+        item.client.nombre.toLocaleLowerCase().includes(data.name_client.toLocaleLowerCase()) &&
+        item.status.toLocaleLowerCase().includes(data.status_opportunity.toLocaleLowerCase())
+      );
+    });
+    setFilterData(search || [])
+  };
   const handleRowClicked: HandleRowClicked = (data) => {
-    setSelectedOpportunity(null)
+    setSelectedOpportunity(null);
     navigate(`/opportunity/${data.id}/resumen`);
   };
-  return (
-    <>
-      <ContainerWithTitle title="Oportunidades">
-        {clients.length > 0 && (
-          <MyDataTable
+  useEffect(() => {
+    if (opportunities) {
+      setFilterData(opportunities);
+    }
+  }, [opportunities]);
+  if (filterData)
+    return (
+      <>
+        <ContainerWithTitle title="Oportunidades">
+          <form className="flex gap-2 items-baseline" onSubmit={handleSubmit(onFilter)}>
+            <div className="w-full">
+              <Input
+                type="search"
+                placeholder="Buscar por descripcion"
+                {...register("name_oportunity")}
+              />
+            </div>
+            <div className="w-full">
+              <Input
+                type="search"
+                placeholder="Buscar por cliente"
+                {...register("name_client")}
+              />
+            </div>
+            <div className="w-180">
+              <Select {...register("status_opportunity")}>
+                <StatusOptions />
+              </Select>
+            </div>
+            <Button variant="yellow" type="submit">
+              Filtrar
+            </Button>
+          </form>
+
+          <DataTable
             columns={columns}
-            fetchData={fetchData}
-            formFilters={<FormInputs />}
-            onFilter={onFilter}
+            data={filterData}
+            customStyles={customStyles}
+            theme={theme}
+            pagination
+            paginationPerPage={30}
             onRowClicked={handleRowClicked}
+            pointerOnHover
+            highlightOnHover
           />
-        )}
-      </ContainerWithTitle>
-      <span className="absolute bottom-8 right-8">
-        <ButtonNavigate variant="yellow" route="/new-opportunity">
-          Nueva Oportunidad
-        </ButtonNavigate>
-      </span>
-    </>
-  );
+        </ContainerWithTitle>
+        <span className="absolute bottom-8 right-8">
+          <ButtonNavigate variant="yellow" route="/new-opportunity">
+            Nueva Oportunidad
+          </ButtonNavigate>
+        </span>
+      </>
+    );
+  return <p>Cargando datos</p>;
 }

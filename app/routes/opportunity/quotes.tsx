@@ -36,15 +36,15 @@ export default function Quotes() {
     isFieldsChanged,
     setIsFieldsChanged,
   } = useUI();
-  const { phases, quotes, detailsItems, detailsMaterials } =
+  const { phases, quotes, details_items, details_materials } =
     selectedOpportunity || {};
   if (quotes?.length === 0) return <ButtonCreateQuote />;
   const quoteActive = quotes?.find((quote) => quote.active);
   const { id: id_quote_active } = quoteActive || {};
   const valuesForm = {
     //id_phase: phases && phases.length > 0 ? phases[0].id : 0,
-    items: detailsItems,
-    materials: detailsMaterials,
+    items: details_items,
+    materials: details_materials,
   };
   const handleNavigate = (t: PropsType) => {
     const href = `opportunity/${id}/quotes/${
@@ -86,6 +86,7 @@ export default function Quotes() {
                 defaultValue={String(selectedPhase)}
                 id="id_phase"
                 onChange={(e) => handleChangePhases(e)}
+                disabled={isFieldsChanged}
               >
                 {phases?.map((phase) => (
                   <option key={phase.id} value={phase.id}>

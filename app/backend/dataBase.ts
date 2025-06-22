@@ -1,28 +1,6 @@
 import { createCrud } from "./crudFactory";
-type CommonTypesDataBase = {
-  id: number;
-  created_at: string;
-};
-export type StatusType =
-  | "Nuevo"
-  | "Desestimada"
-  | "En proceso"
-  | "Enviada"
-  | "Revisión"
-  | "Ganada"
-  | "Perdida"
-  | "No status";
+import type { CommonTypesDataBase, OpportunityInput, OpportunityType } from "~/types/database";
 
-export type OpportunityType = OpportunityInput & CommonTypesDataBase;
-export type OpportunityInput = {
-  name: string;
-  scope?: string;
-  id_client: number;
-  status: StatusType;
-  created_by: string;
-  history_data?: {} | null;
-  loss_reason?: string | null;
-};
 export type PhasesInput = {
   name: string;
   id_opportunity: number;
@@ -119,10 +97,10 @@ export const phasesApi = createCrud<PhasesType, PhasesInput>("phases");
 export const quotesApi = createCrud<QuotesType, QuotesInput>(
   "quotes"
 );
-export const detailsItemsApi = createCrud<DetailsItemsType, DetailsItemsInput>(
+export const details_itemsApi = createCrud<DetailsItemsType, DetailsItemsInput>(
   "details_items"
 );
-export const detailsMaterialsApi = createCrud<
+export const details_materialsApi = createCrud<
   DetailsMaterialsType,
   DetailsMaterialsInput
 >("details_materials");

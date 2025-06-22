@@ -1,9 +1,11 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useContacts, type ClientDataType } from "./ContactsContext";
 import type { ModalBaseProps } from "~/components/Generals/Modals";
+import { supabase } from "~/backend/supabaseClient";
+import { unitsApi } from "~/backend/dataBase";
+import type { OpportunityType } from "~/types/database";
 import type {
-  OpportunityType,
   PhasesType,
   QuotesType,
   ProfitMarginType,
@@ -16,42 +18,44 @@ import type {
   MaterialsType,
   PricesType,
 } from "~/backend/dataBase";
-import {
-  opportunityApi,
-  phasesApi,
-  quotesApi,
-  profitMarginApi,
-  detailsItemsApi,
-  detailsMaterialsApi,
-  familyApi,
-  categoryApi,
-  subcategoryApi,
-  unitsApi,
-  materialsApi,
-  pricesApi,
-} from "~/backend/dataBase";
-
+export type ViewCategorizacionProps = {
+  description_category: string;
+  description_family: string;
+  description_subcategory: string;
+  id_category: number;
+  id_family: number;
+  id_subcategory: number;
+};
+export type MaterialTypeDB = MaterialsType & {
+  prices: PricesType[];
+  view_categorizations: ViewCategorizacionProps;
+};
+export type OpportunitiesTypeDB = OpportunityType & {
+  client: ClientDataType;
+  phases: PhasesType[];
+  quotes: QuotesType[];
+};
+export type CategoriesProps = {
+  id: number;
+  description: string;
+};
+export type CategorizationsProps = {
+  families: CategoriesProps[] | null;
+  categories: Array<CategoriesProps & { id_family: number }> | null;
+  subcategories: Array<CategoriesProps & { id_category: number }> | null;
+};
 export type OpportunitiesWithClient = OpportunityType & {
   client: ClientDataType;
 };
-export type OpportunityAll = OpportunityType & {
-  phases: PhasesType[];
-  quotes: QuotesType[] | [];
-  profitMargins: ProfitMarginType[] | [];
-  detailsItems: DetailsItemsType[] | [];
-  detailsMaterials: DetailsMaterialsType[] | [];
+type QuotesDataTypes = {
+  profit_margins: ProfitMarginType[] | [];
+  details_items: DetailsItemsType[] | [];
+  details_materials: DetailsMaterialsType[] | [];
 };
-type DirtyFields = {
-  [key: string]: boolean | object;
-};
+export type OpportunityAll = OpportunitiesTypeDB & QuotesDataTypes;
 type ModalProps = Omit<ModalBaseProps, "onClose">;
 type ThemeProps = "dark" | "light";
-type CategorizationsProps = {
-  families: FamilyType[] | null;
-  categories: CategoryType[] | null;
-  subcategories: SubCategoryType[] | null;
-  units: UnitsType[] | null;
-};
+
 export type SelectedMaterialType = MaterialsType & {
   prices: PricesType[] | [];
 };
@@ -96,47 +100,72 @@ type UIContextType = {
     React.SetStateAction<CategorizationsProps | null>
   >;
   getCategorizations: () => Promise<void>;
-  selectedMaterial: SelectedMaterialType | null;
+  selectedMaterial: MaterialTypeDB | null;
   setSelectedMaterial: React.Dispatch<
-    React.SetStateAction<SelectedMaterialType | null>
+    React.SetStateAction<MaterialTypeDB | null>
   >;
-  getMaterial: (id: number) => Promise<void>;
+  getMaterial: (id: number, materialsList: MaterialTypeDB[]) => void;
   refreshMaterial: () => Promise<void>;
   selectedPhase: number | null;
   setSelectedPhase: React.Dispatch<React.SetStateAction<number | null>>;
   activeType: "materiales" | "mano de obra" | "subcontratos" | "otros";
-  setActiveType:React.Dispatch<React.SetStateAction<"materiales" | "mano de obra" | "subcontratos" | "otros">>;
+  setActiveType: React.Dispatch<
+    React.SetStateAction<
+      "materiales" | "mano de obra" | "subcontratos" | "otros"
+    >
+  >;
+  materials: MaterialTypeDB[] | null;
+  setMaterials: React.Dispatch<React.SetStateAction<MaterialTypeDB[] | null>>;
+  getMaterials: () => Promise<MaterialTypeDB[]>;
+  getUnits: () => Promise<void>;
+  units: UnitsType[] | null;
+  getOpportunities: () => Promise<OpportunitiesTypeDB[]>;
+  opportunities: OpportunitiesTypeDB[] | null;
+  setOpportunities: React.Dispatch<
+    React.SetStateAction<OpportunitiesTypeDB[] | null>
+  >;
 };
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<ThemeProps>("dark");
+  /* Datos */
+  const [materials, setMaterials] = useState<MaterialTypeDB[] | null>(null);
+  const [opportunities, setOpportunities] = useState<
+    OpportunitiesTypeDB[] | null
+  >(null);
+  const [units, setUnits] = useState<UnitsType[] | null>(null);
+  const [categorizations, setCategorizations] =
+    useState<CategorizationsProps | null>(null);
+  const { clients } = useContacts();
+  /* Seleccionados */
+  const [selectedClient, setSelectedClient] = useState<ClientDataType | null>(
+    null
+  );
+  const [selectedMaterial, setSelectedMaterial] =
+    useState<MaterialTypeDB | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<number | null>(null);
+  const [selectedOpportunity, setSelectedOpportunity] =
+    useState<OpportunityAll | null>(null);
   const [activeType, setActiveType] = useState<
     "materiales" | "mano de obra" | "subcontratos" | "otros"
   >("materiales");
   const [selectedSupplier, setSelectedSupplier] =
     useState<ClientDataType | null>(null);
-  const [openSupplierModal, setOpenSupplierModal] = useState<boolean>(false);
-  const [categorizations, setCategorizations] =
-    useState<CategorizationsProps | null>(null);
+  /* Booleans */
   const [isFieldsChanged, setIsFieldsChanged] = useState<boolean>(false);
   const [isModeEdit, setIsModeEdit] = useState<boolean>(false);
-  const { clients } = useContacts();
+  /* Modales */
   const [modal, setModal] = useState<ModalProps | null>(null);
-  const [theme, setTheme] = useState<ThemeProps>("dark");
-  const [openClientModal, setOpenClientModal] = useState<boolean>(false);
-  const [openMaterialsModal,setOpenMaterialsModal] = useState<boolean>(false);
-  const [openPriceModal, setOpenPriceModal] = useState<boolean>(false);
-  const [selectedClient, setSelectedClient] = useState<ClientDataType | null>(
-    null
-  );
   const showModal = (modal: ModalProps) => setModal(modal);
   const closeModal = () => setModal(null);
-  const [selectedOpportunity, setSelectedOpportunity] =
-    useState<OpportunityAll | null>(null);
-  const [selectedMaterial, setSelectedMaterial] =
-    useState<SelectedMaterialType | null>(null);
-  const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
+  /* Modales Específicos */
+  const [openClientModal, setOpenClientModal] = useState<boolean>(false);
+  const [openMaterialsModal, setOpenMaterialsModal] = useState<boolean>(false);
+  const [openPriceModal, setOpenPriceModal] = useState<boolean>(false);
+  const [openSupplierModal, setOpenSupplierModal] = useState<boolean>(false);
+  /* Funcines */
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "dark" ? "light" : "dark"));
     document.documentElement.setAttribute(
@@ -144,154 +173,40 @@ export function UIProvider({ children }: { children: ReactNode }) {
       theme === "dark" ? "light" : "dark"
     );
   };
-
-  const getOpportunity = async (id: number) => {
-    if (!clients || clients.length === 0) {
-      console.log("No hay clientes disponibles, obteniendo clientes...");
-      return;
-    }
-    try {
-      const { data, error } = await opportunityApi.getById({ id: id });
-      if (error)
-        throw new Error(
-          `No se pudo obtener la información del id ${id} | Error message: ${error}`
-        );
-      if (!data || !("id_client" in data)) {
-        throw new Error("No se pudo obtener el id del cliente");
-      }
-      const { id_client } = data;
-      //obteniendo cliente
-      const client = clients.find((itemClient) => itemClient.id === id_client);
-      if (!client) throw new Error("Cliente no encontrado");
-      setSelectedClient(client);
-      //obteniendo etapas
-      const { data: phases, error: errorPhases } =
-        await phasesApi.getDataByAnyColumn({
-          column: "id_opportunity",
-          id: id,
-        });
-      if (errorPhases)
-        throw new Error(
-          `No se pudo obtener las etapas del id ${id} | Error message: ${error}`
-        );
-      if (!phases || phases.length === 0)
-        throw new Error(
-          "No se encontraron etapas relacionadas con esta oportunidad"
-        );
-
-      //obteniendo cotizaciones
-      const { data: quotes, error: errorQuotes } =
-        await quotesApi.getDataByAnyColumn({
-          column: "id_opportunity",
-          id: id,
-        });
-      if (errorQuotes)
-        throw new Error(
-          `No se pudo obtener las cotizaciones del id ${id} | Error message: ${errorQuotes}`
-        );
-      if (!quotes || quotes.length === 0) {
-        setSelectedOpportunity({
-          ...data,
-          phases: phases,
-          quotes: quotes ?? [],
-          profitMargins: [],
-          detailsItems: [],
-          detailsMaterials: [],
-        });
-        return;
-      }
-      // obteniendo margenes de ganancia
-      const { data: profitMargins, error: errorProfitMargins } =
-        await profitMarginApi.getDataByAnyColumn({
-          column: "id_opportunity",
-          id: id,
-        });
-      if (errorProfitMargins)
-        throw new Error(
-          `No se pudo obtener los margenes de ganancia del id ${id} | Error message: ${errorProfitMargins}`
-        );
-      // obteniendo detalles de cotizaciones
-      const idsQuotes = quotes.map((quote) => quote.id);
-      const { data: detailsItems, error: errorDetailsItems } =
-        await detailsItemsApi.getDataByEveryIds(idsQuotes, "id_quote");
-      if (errorDetailsItems) {
-        throw new Error(
-          `No se pudo obtener los detalles de las cotizaciones del id ${id} | Error message: ${errorDetailsItems}`
-        );
-      }
-      const { data: detailsMaterials, error: errorDetailsMaterials } =
-        await detailsMaterialsApi.getDataByEveryIds(idsQuotes, "id_quote");
-      if (errorDetailsMaterials) {
-        throw new Error(
-          `No se pudo obtener los detalles de los materiales del id ${id} | Error message: ${errorDetailsMaterials}`
-        );
-      }
-      const dataCompleted = {
-        ...data,
-        phases: phases,
-        quotes: quotes ?? [],
-        profitMargins: profitMargins ?? [],
-        detailsItems: detailsItems ?? [],
-        detailsMaterials: detailsMaterials ?? [],
-      };
-      setSelectedOpportunity(dataCompleted);
-    } catch (e) {
-      showModal({
-        title: "Error",
-        message: `No se pudo obtener la oportunidad`,
-        variant: "error",
-        code: String(e),
-      });
-      console.error(e);
-    }
-  };
-  const refreshOpportunity = async () => {
-    if (!selectedOpportunity) return;
-    const { id } = selectedOpportunity;
-    await getOpportunity(id);
-  };
-  const handleSetIsFieldsChanged = (
-    isSubmitSuccessful: boolean,
-    isDirty: boolean
-  ): void => {
-    setIsFieldsChanged?.(isDirty);
-    if (isSubmitSuccessful) {
-      setIsFieldsChanged(false);
-    }
-  };
   const getCategorizations = async () => {
     try {
-      const { data: dataFamily, error: errorFamily } = await familyApi.getAll(
-        {}
+      const { data, error } = await supabase
+        .from("view_categorizations")
+        .select("*");
+      if (error) throw new Error(error.message);
+      const subcategories = data?.map((item) => {
+        return {
+          id: item.id_subcategory,
+          description: item.description_subcategory,
+          id_category: item.id_category,
+        };
+      });
+      const categoriesAll = data?.map((item) => {
+        return {
+          id: item.id_category,
+          description: item.description_category,
+          id_family: item.id_family,
+        };
+      });
+      const categories = Array.from(
+        new Map(categoriesAll?.map((item) => [item.id, item])).values()
       );
-      if (errorFamily)
-        throw new Error(
-          `No se pudo obtener la familia | Error: ${errorFamily}`
-        );
+      const familiesAll = data?.map((item) => {
+        return { id: item.id_family, description: item.description_family };
+      });
+      const families: CategoriesProps[] = Array.from(
+        new Map(familiesAll?.map((item) => [item.id, item])).values()
+      );
 
-      const { data: dataCategory, error: errorCategory } =
-        await categoryApi.getAll({});
-      if (errorCategory)
-        throw new Error(
-          `No se pudo obtener los rubros | Error: ${errorCategory}`
-        );
-
-      const { data: dataSucategory, error: errorSucategory } =
-        await subcategoryApi.getAll({});
-      if (errorSucategory)
-        throw new Error(
-          `No se pudo obtener los sub-rubros | Error: ${errorSucategory}`
-        );
-      const { data: dataUnits, error: errorUnits } = await unitsApi.getAll({});
-      if (errorUnits)
-        throw new Error(
-          `No se pudo obtener las unidades | Error: ${errorUnits}`
-        );
       setCategorizations({
-        families: dataFamily,
-        categories: dataCategory,
-        subcategories: dataSucategory,
-        units: dataUnits,
+        families: families,
+        categories: categories,
+        subcategories: subcategories,
       });
     } catch (e) {
       showModal({
@@ -302,40 +217,187 @@ export function UIProvider({ children }: { children: ReactNode }) {
       });
     }
   };
-  const getMaterial = async (id: number) => {
-    if (!categorizations) {
-      getCategorizations();
-      return;
-    }
-    const { data: dataMaterial, error: errorMaterial } =
-      await materialsApi.getById({ id });
-    if (errorMaterial)
-      showModal({
-        title: "Error",
-        message: "No se pudo acceder al material",
-        code: String(errorMaterial),
-        variant: "error",
-      });
-    const { data: dataPrices, error: errorPrices } =
-      await pricesApi.getDataByAnyColumn({
-        column: "id_material",
-        id: id,
-      });
-    if (errorPrices)
-      showModal({
-        title: "Error",
-        message: "No se pudo acceder a los precios",
-        code: String(errorMaterial),
-        variant: "error",
-      });
-    if (!dataPrices || !dataMaterial) return;
-    const dataWithPrices = { ...dataMaterial, prices: dataPrices };
-    setSelectedMaterial(dataWithPrices);
+  const getMaterial = (id: number, materialsList: MaterialTypeDB[]) => {
+    const data = materialsList.find((item) => item.id === id);
+    setSelectedMaterial(data || null);
   };
+
   const refreshMaterial = async () => {
     if (!selectedMaterial) return;
     const { id } = selectedMaterial;
-    await getMaterial(id);
+    const updatedMaterials = await getMaterials();
+    if (!updatedMaterials) return;
+    getMaterial(id, updatedMaterials);
+  };
+
+  const getMaterials = async (): Promise<MaterialTypeDB[]> => {
+    let allData: MaterialTypeDB[] = [];
+    let from = 0;
+    const pageSize = 1000;
+
+    while (true) {
+      const { data, error, count } = await supabase
+        .from("materials")
+        .select("*, prices(*), view_categorizations(*)", { count: "exact" })
+        .order("id", { ascending: true })
+        .range(from, from + pageSize - 1);
+
+      if (error) throw new Error("Error: " + error.message);
+      if (!data || data.length === 0) break;
+
+      allData = allData.concat(data);
+      from += pageSize;
+
+      if (data.length < pageSize) break;
+    }
+    setMaterials(allData);
+    return allData;
+  };
+  const getUnits = async () => {
+    const { data, error } = await unitsApi.getAll({});
+    if (error)
+      showModal({
+        title: "Error",
+        message: "Hubo un problema la traer las unidades",
+        code: String(error.message),
+        variant: "error",
+      });
+    setUnits(data);
+  };
+  const getOpportunities = async (): Promise<OpportunitiesTypeDB[]> => {
+    let allData: OpportunitiesTypeDB[] = [];
+    let from = 0;
+    const pageSize = 1000;
+
+    while (true) {
+      const { data, error, count } = await supabase
+        .from("opportunities")
+        .select("*, phases(*),quotes(*)", { count: "exact" })
+        .order("id", { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (error) throw new Error("Error: " + error.message);
+
+      if (!data || data.length === 0) break;
+
+      allData = allData.concat(data);
+      from += pageSize;
+      if (data.length < pageSize) break;
+    }
+    if (clients.length > 0) {
+      setOpportunities(
+        allData
+          .map((item) => {
+            const client = clients.find((c) => c.id === item.id_client);
+            if (!client) return null; // filter out if no client found
+            return { ...item, client };
+          })
+          .filter((item): item is OpportunitiesTypeDB => item !== null)
+      );
+    }
+    return allData;
+  };
+  /* Revisar */
+  const getOpportunity = async (id: number) => {
+    try {
+      // Obtener oportunidades, ya sea desde el store local o desde la API
+      const dataOpportunities = opportunities ?? (await getOpportunities());
+      const opportunity = dataOpportunities.find((item) => item.id === id);
+      if (!opportunity) throw new Error("no hay oportunidades asociadas");
+
+      const hasQuotes =
+        Array.isArray(opportunity.quotes) && opportunity.quotes.length > 0;
+
+      let dataQuotes: QuotesDataTypes = {
+        profit_margins: [],
+        details_items: [],
+        details_materials: [],
+      };
+
+      if (hasQuotes) {
+        const idsQuotes = opportunity.quotes.map(
+          (quote: QuotesType) => quote.id
+        );
+
+        const { data, error } = await supabase
+          .from("quotes")
+          .select("profit_margins(*), details_items(*), details_materials(*)")
+          .in("id", idsQuotes);
+
+        if (error) {
+          throw new Error(
+            `Error al obtener detalles de quotes: ${error.message}`
+          );
+        }
+
+        if (data?.length) {
+          // Si tenés múltiples quotes, podrías ajustar esta lógica para agrupar todos los datos
+          dataQuotes = data[0];
+        }
+      }
+
+      const mergedOpportunity = {
+        ...opportunity,
+        ...dataQuotes,
+      };
+      setSelectedClient(mergedOpportunity.client);
+      setSelectedOpportunity(mergedOpportunity);
+    } catch (err) {
+      console.error("Error en getOpportunity:", err);
+    }
+  };
+  const refreshOpportunity = async () => {
+    if (!selectedOpportunity) return;
+    const { id } = selectedOpportunity;
+    const updatedOpportunities = await getOpportunities();
+    if (!updatedOpportunities) return;
+    await getOpportunity(id);
+    const opportunity = updatedOpportunities.find((item) => item.id === id);
+    if (opportunity) {
+      let dataQuotes: QuotesDataTypes = {
+        profit_margins: [],
+        details_items: [],
+        details_materials: [],
+      };
+      const hasQuotes =
+        Array.isArray(opportunity.quotes) && opportunity.quotes.length > 0;
+      if (hasQuotes) {
+        const idsQuotes = opportunity.quotes.map(
+          (quote: QuotesType) => quote.id
+        );
+
+        const { data, error } = await supabase
+          .from("quotes")
+          .select("profit_margins(*), details_items(*), details_materials(*)")
+          .in("id", idsQuotes);
+
+        if (error) {
+          throw new Error(
+            `Error al obtener detalles de quotes: ${error.message}`
+          );
+        }
+
+        if (data?.length) {
+          // Si tenés múltiples quotes, podrías ajustar esta lógica para agrupar todos los datos
+          dataQuotes = data[0];
+        }
+      }
+      const mergedOpportunity = {
+        ...opportunity,
+        ...dataQuotes,
+      };
+      setSelectedClient(mergedOpportunity.client);
+      setSelectedOpportunity(mergedOpportunity);
+    }
+  };
+  const handleSetIsFieldsChanged = (
+    isSubmitSuccessful: boolean,
+    isDirty: boolean
+  ): void => {
+    setIsFieldsChanged?.(isDirty);
+    if (isSubmitSuccessful) {
+      setIsFieldsChanged(false);
+    }
   };
   return (
     <UIContext.Provider
@@ -376,7 +438,15 @@ export function UIProvider({ children }: { children: ReactNode }) {
         activeType,
         setActiveType,
         openMaterialsModal,
-        setOpenMaterialsModal
+        setOpenMaterialsModal,
+        getMaterials,
+        materials,
+        setMaterials,
+        getUnits,
+        units,
+        getOpportunities,
+        opportunities,
+        setOpportunities,
       }}
     >
       {children}

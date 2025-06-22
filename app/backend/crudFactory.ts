@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient";
 
-type CommonResponse<TFull> = {
+export type CommonResponse<TFull> = {
   data: TFull | null;
   error: Error | null;
 };
@@ -9,7 +9,7 @@ export type ListResponse<TFull> = {
   error: Error | null;
   count: number | null;
 };
-type UpdateorDeleteResponse = {
+export type UpdateorDeleteResponse = {
   status: number | null;
   error: Error | null;
 };
@@ -129,13 +129,7 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         };
       }
     },
-    update: async ({
-      id,
-      values,
-    }: {
-      id: number;
-      values: Partial<TFull>;
-    }): Promise<UpdateorDeleteResponse> => {
+    update: async ({id,values}: {id: number; values: Partial<TFull>}): Promise<UpdateorDeleteResponse> => {
       try {
         const { status, error } = await supabase
           .from(table)
@@ -156,15 +150,26 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
           .from(table)
           .delete()
           .eq("id", id);
+
         if (error) throw error;
         return { status, error: null };
-      } catch (err) {
+      } catch (err: any) {
+        if (err.code === "23503") {
+          return {
+            status: null,
+            error: new Error(
+              "No se puede eliminar este registro porque está siendo utilizado en otra tabla."
+            ),
+          };
+        }
+
         return {
           status: null,
           error: err instanceof Error ? err : new Error("Error inesperado"),
         };
       }
     },
+
     filter: async (options: FilterOptions): Promise<ListResponse<TFull>> => {
       try {
         let query = supabase.from(table).select("*", { count: "exact" });
@@ -207,7 +212,7 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
 
         return { data: data ?? [], error: null, count };
       } catch (err) {
-        console.log(err)
+        console.log(err);
         return {
           data: null,
           error: err instanceof Error ? err : new Error("Error inesperado"),

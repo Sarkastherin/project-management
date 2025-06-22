@@ -8,7 +8,7 @@ import { quotesApi, type QuotesType } from "~/backend/dataBase";
 import FooterForms from "./FooterForms";
 import { useEffect, useState } from "react";
 import {
-  detailsItemsApi,
+  details_itemsApi,
   type DetailsItemsType,
   type DetailsMaterialsType,
   type PhasesType,
