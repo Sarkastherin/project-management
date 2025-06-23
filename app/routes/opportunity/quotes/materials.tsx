@@ -40,7 +40,6 @@ export default function Materials() {
     handleSetIsFieldsChanged,
     isModeEdit,
     selectedOpportunity,
-    selectedMaterial,
     units,
     materials,
   } = useUI();
@@ -156,47 +155,6 @@ export default function Materials() {
   useEffect(() => {
     handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
   }, [isSubmitSuccessful, isDirty]);
-  useEffect(() => {
-    if (selectedMaterial && activeIndex !== null) {
-      setValue(`materials.${activeIndex}.id_material`, selectedMaterial.id, {
-        shouldDirty: true,
-      });
-      setValue(
-        `materials.${activeIndex}.name_material`,
-        selectedMaterial.description,
-        {
-          shouldDirty: true,
-        }
-      );
-      const defaultPrice = selectedMaterial.prices.find(
-        (price) => price.default === true
-      );
-      if (defaultPrice) {
-        setValue(`materials.${activeIndex}.id_price`, defaultPrice.id, {
-          shouldDirty: true,
-        });
-        setValue(`materials.${activeIndex}.price`, defaultPrice.price, {
-          shouldDirty: true,
-        });
-      } else {
-        setValue(`materials.${activeIndex}.id_price`, 0, {
-          shouldDirty: true,
-        });
-        setValue(`materials.${activeIndex}.price`, 0, {
-          shouldDirty: true,
-        });
-      }
-      if (
-        selectedMaterial.id_unit !== undefined &&
-        selectedMaterial.id_unit !== null
-      ) {
-        setValue(
-          `materials.${activeIndex}.unit_material`,
-          selectedMaterial.id_unit
-        );
-      }
-    }
-  }, [selectedMaterial]);
   const Cell = ({ children }: { children: React.ReactNode }) => {
     return <td className="px-1 py-2 whitespace-nowrap">{children}</td>;
   };
