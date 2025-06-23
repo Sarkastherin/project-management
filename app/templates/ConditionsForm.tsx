@@ -1,28 +1,31 @@
 import { Input, Select, Textarea } from "~/components/Forms/Inputs";
-import { CardToggle } from "~/components/Generals/Cards";
+import { CardToggle, Card } from "~/components/Generals/Cards";
 import { useForm } from "react-hook-form";
 import { useUI } from "~/context/UIContext";
-import ModalClientes from "~/components/Specific/ModalClientes";
-import {
-  quotesApi,
-  type QuotesType,
-} from "~/backend/dataBase";
+import { quotesApi, type QuotesType } from "~/backend/dataBase";
 import FooterForms from "./FooterForms";
 import { useEffect } from "react";
+import { updateSingleRow, type DirtyMap } from "~/utils/updatesSingleRow";
 
-type QuotesTypesFormProps = {
-  defaultValues: QuotesType
-};
 export default function ConditionsForm({
-  defaultValues,
-}: QuotesTypesFormProps) {
-  const { showModal, refreshOpportunity, isModeEdit, handleSetIsFieldsChanged } = useUI();
+  quoteActive,
+}: {
+  quoteActive: number;
+}) {
+  const {
+    showModal,
+    isModeEdit,
+    handleSetIsFieldsChanged,
+    selectedOpportunity,
+  } = useUI();
+  const { quotes } = selectedOpportunity || {};
   const {
     register,
     formState: { dirtyFields, isSubmitting, isSubmitSuccessful, isDirty },
     handleSubmit,
+    reset,
   } = useForm<QuotesType>({
-    defaultValues: defaultValues ?? {},
+    defaultValues: {},
   });
   const onSubmit = async (formData: QuotesType): Promise<void> => {
     showModal({
@@ -30,14 +33,11 @@ export default function ConditionsForm({
       message: `Procesando requerimiento`,
     });
     try {
-      const updatePayload: Partial<Record<keyof QuotesType, QuotesType[keyof QuotesType]>> = {};
-      (Object.keys(dirtyFields) as Array<keyof QuotesType>).forEach((key) => {
-        if (dirtyFields[key] === false) return;
-        updatePayload[key] = formData[key];
+      await updateSingleRow({
+        dirtyFields: dirtyFields as DirtyMap<QuotesType>,
+        formData: formData,
+        onUpdate: quotesApi.update,
       });
-      const {id: id_quote} = formData
-      const {error: errorUpdate} = await quotesApi.update({id: id_quote, values: updatePayload as Partial<QuotesType>});
-      if(errorUpdate) throw new Error(String(errorUpdate));
       showModal({
         title: "¡Todo OK!",
         message: `Oportunidad actualizada correctamente`,
@@ -50,8 +50,6 @@ export default function ConditionsForm({
         code: String(e),
         variant: "error",
       });
-    } finally {
-      refreshOpportunity();
     }
   };
   const formaPago = [
@@ -67,6 +65,11 @@ export default function ConditionsForm({
   useEffect(() => {
     handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
   }, [isSubmitSuccessful, isDirty]);
+  useEffect(() => {
+    const quote = quotes?.find((q) => q.id === quoteActive);
+    if (quote) reset(quote);
+  }, [quotes, quoteActive]);
+
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
@@ -134,9 +137,105 @@ export default function ConditionsForm({
             </div>
           </CardToggle>
         </fieldset>
-        <FooterForms mode="view"/>
+        <fieldset disabled={!isModeEdit}>
+          <CardToggle title="Margenes de Ganancias">
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto divide-y-2 divide-zinc-200 dark:divide-zinc-700">
+                <colgroup>
+                  <col />
+                  <col className="w-[1%]" />
+                  <col className="w-[1%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[1%]" />
+                </colgroup>
+                <thead className="ltr:text-left rtl:text-right">
+                  <tr className="*:font-medium *:text-zinc-900 dark:*:text-white">
+                    <th className="px-3 py-2 whitespace-nowrap">
+                      Categoria de Cotización
+                    </th>
+                    <th className="px-3 py-2 whitespace-nowrap">Total</th>
+                    <th className="px-3 py-2 whitespace-nowrap">INC %</th>
+                    <th className="px-3 py-2 whitespace-nowrap">Márgen/Comp</th>
+                    <th className="px-3 py-2 whitespace-nowrap">
+                      Total con M/S
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
+                  <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
+                    <td className="px-3 py-2 whitespace-nowrap">Materiales</td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">0 %</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <Input placeholder="0%" {...register("materials")} />
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                  </tr>
+                  <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      Mano de obra
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">0 %</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <Input placeholder="0%" {...register("labor")} />
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                  </tr>
+                  <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      Subcontratos
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">0 %</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <Input placeholder="0%" {...register("subcontracting")} />
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                  </tr>
+                  <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
+                    <td className="px-3 py-2 whitespace-nowrap">Otros</td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">0 %</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <Input placeholder="0%" {...register("others")} />
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardToggle>
+        </fieldset>
+        <fieldset disabled={!isModeEdit}>
+          <Card>
+            <table className="min-w-full table-auto ">
+              <colgroup>
+                <col className="w-[1%]" />
+                <col className="w-[20%]" />
+                <col className="w-[1%]" />
+              </colgroup>
+              <thead className="ltr:text-left rtl:text-right">
+                <tr className="*:font-medium *:text-zinc-900 dark:*:text-white">
+                  <th className="px-3 py-2 whitespace-nowrap">Total</th>
+                  <th className="px-3 py-2 whitespace-nowrap">Márgen final</th>
+                  <th className="px-3 py-2 whitespace-nowrap">Precio final</th>
+                </tr>
+              </thead>
+              <tbody className="">
+                <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
+                  <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <Input placeholder="0%" {...register("general")} />
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </Card>
+        </fieldset>
+        <FooterForms mode="view" />
       </form>
-      <ModalClientes />
     </>
   );
 }

@@ -2,6 +2,9 @@ import type { Route } from "./+types/home";
 import { ContainerWithTitle } from "~/components/Generals/Containers";
 import OpportunityForm from "~/templates/OpportunityForm";
 import { useAuth } from "~/context/AuthContext";
+import { useOpportunityRealtime } from "~/backend/realTime";
+import { useEffect } from "react";
+import { useUI } from "~/context/UIContext";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Nueva Oportunidad" },
@@ -10,10 +13,14 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function NewOpportunity() {
+  useOpportunityRealtime()
   const { user } = useAuth();
+  const { setSelectedClient} = useUI()
+
+  useEffect(() => {setSelectedClient(null)},[])
   return (
     <>
-      <ContainerWithTitle title="NewOpportunity">
+      <ContainerWithTitle title="Creando nueva oportunidad">
         <OpportunityForm
           mode="create"
           defaultValues={{
@@ -21,7 +28,6 @@ export default function NewOpportunity() {
             id_client: 0,
             status: "Nuevo",
             created_by: user?.user_name || "",
-            phases: [],
           }}
         />
       </ContainerWithTitle>

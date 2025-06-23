@@ -48,7 +48,6 @@ export type OpportunitiesWithClient = OpportunityType & {
   client: ClientDataType;
 };
 type QuotesDataTypes = {
-  profit_margins: ProfitMarginType[] | [];
   details_items: DetailsItemsType[] | [];
   details_materials: DetailsMaterialsType[] | [];
 };
@@ -85,7 +84,10 @@ type UIContextType = {
   setSelectedOpportunity: React.Dispatch<
     React.SetStateAction<OpportunityAll | null>
   >;
-  getOpportunity: (id: number) => Promise<void>;
+  getOpportunity: (
+    id: number,
+    opportunitiesList: OpportunitiesTypeDB[]
+  ) => Promise<void>;
   refreshOpportunity: () => Promise<void>;
   isModeEdit: boolean;
   setIsModeEdit: React.Dispatch<React.SetStateAction<boolean>>;
@@ -124,6 +126,7 @@ type UIContextType = {
   setOpportunities: React.Dispatch<
     React.SetStateAction<OpportunitiesTypeDB[] | null>
   >;
+  getOpportunityById: (id: number) => Promise<OpportunityAll | null>;
 };
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -217,19 +220,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
       });
     }
   };
-  const getMaterial = (id: number, materialsList: MaterialTypeDB[]) => {
-    const data = materialsList.find((item) => item.id === id);
-    setSelectedMaterial(data || null);
-  };
-
-  const refreshMaterial = async () => {
-    if (!selectedMaterial) return;
-    const { id } = selectedMaterial;
-    const updatedMaterials = await getMaterials();
-    if (!updatedMaterials) return;
-    getMaterial(id, updatedMaterials);
-  };
-
   const getMaterials = async (): Promise<MaterialTypeDB[]> => {
     let allData: MaterialTypeDB[] = [];
     let from = 0;
@@ -253,17 +243,18 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setMaterials(allData);
     return allData;
   };
-  const getUnits = async () => {
-    const { data, error } = await unitsApi.getAll({});
-    if (error)
-      showModal({
-        title: "Error",
-        message: "Hubo un problema la traer las unidades",
-        code: String(error.message),
-        variant: "error",
-      });
-    setUnits(data);
+  const getMaterial = (id: number, materialsList: MaterialTypeDB[]) => {
+    const data = materialsList.find((item) => item.id === id);
+    setSelectedMaterial(data || null);
   };
+  const refreshMaterial = async () => {
+    if (!selectedMaterial) return;
+    const { id } = selectedMaterial;
+    const updatedMaterials = await getMaterials();
+    if (!updatedMaterials) return;
+    getMaterial(id, updatedMaterials);
+  };
+
   const getOpportunities = async (): Promise<OpportunitiesTypeDB[]> => {
     let allData: OpportunitiesTypeDB[] = [];
     let from = 0;
@@ -297,19 +288,84 @@ export function UIProvider({ children }: { children: ReactNode }) {
     }
     return allData;
   };
-  /* Revisar */
-  const getOpportunity = async (id: number) => {
+  const getOpportunityById = async (id: number): Promise<OpportunityAll | null> => {
     try {
-      // Obtener oportunidades, ya sea desde el store local o desde la API
-      const dataOpportunities = opportunities ?? (await getOpportunities());
-      const opportunity = dataOpportunities.find((item) => item.id === id);
+      const { data: opportunity, error } = await supabase
+        .from("opportunities")
+        .select("*, phases(*), quotes(*)")
+        .eq("id", id)
+        .single();
+
+      if (error || !opportunity)
+        throw new Error("No se pudo obtener la oportunidad");
+
+      const client = clients.find((c) => c.id === opportunity.id_client);
+      if (!client) throw new Error("Cliente no encontrado");
+      const hasQuotes =
+        Array.isArray(opportunity.quotes) && opportunity.quotes.length > 0;
+
+      let dataQuotes: QuotesDataTypes = {
+        details_items: [],
+        details_materials: [],
+      };
+
+      if (hasQuotes) {
+        const idsQuotes = opportunity.quotes.map(
+          (quote: QuotesType) => quote.id
+        );
+        const { data, error } = await supabase
+          .from("quotes")
+          .select("details_items(*), details_materials(*)")
+          .in("id", idsQuotes);
+
+        if (error)
+          throw new Error(
+            `Error al obtener detalles de quotes: ${error.message}`
+          );
+
+        if (data?.length) {
+          dataQuotes = {
+            details_items: data.flatMap((q) => q.details_items ?? []),
+            details_materials: data.flatMap((q) => q.details_materials ?? []),
+          };
+        }
+      }
+      const completedOpportunity = {
+        ...opportunity,
+        client,
+        ...dataQuotes,
+      };
+      setSelectedOpportunity(completedOpportunity);
+      return completedOpportunity;
+    } catch (err) {
+      console.error("Error en getOpportunityById:", err);
+      return null;
+    }
+  };
+  const refreshOpportunity = async () => {
+    if (!selectedOpportunity) return;
+    const { id } = selectedOpportunity;
+    const updatedOpportunity = await getOpportunityById(id);
+    if (!updatedOpportunity) return;
+    setOpportunities(
+      (prev) =>
+        prev?.map((opp) =>
+          opp.id === updatedOpportunity.id ? updatedOpportunity : opp
+        ) ?? []
+    );
+  };
+  const getOpportunity = async (
+    id: number,
+    opportunitiesList: OpportunitiesTypeDB[]
+  ) => {
+    try {
+      const opportunity = opportunitiesList.find((item) => item.id === id);
       if (!opportunity) throw new Error("no hay oportunidades asociadas");
 
       const hasQuotes =
         Array.isArray(opportunity.quotes) && opportunity.quotes.length > 0;
 
       let dataQuotes: QuotesDataTypes = {
-        profit_margins: [],
         details_items: [],
         details_materials: [],
       };
@@ -321,7 +377,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
 
         const { data, error } = await supabase
           .from("quotes")
-          .select("profit_margins(*), details_items(*), details_materials(*)")
+          .select("details_items(*), details_materials(*)")
           .in("id", idsQuotes);
 
         if (error) {
@@ -329,7 +385,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
             `Error al obtener detalles de quotes: ${error.message}`
           );
         }
-
         if (data?.length) {
           // Si tenés múltiples quotes, podrías ajustar esta lógica para agrupar todos los datos
           dataQuotes = data[0];
@@ -346,50 +401,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
       console.error("Error en getOpportunity:", err);
     }
   };
-  const refreshOpportunity = async () => {
-    if (!selectedOpportunity) return;
-    const { id } = selectedOpportunity;
-    const updatedOpportunities = await getOpportunities();
-    if (!updatedOpportunities) return;
-    await getOpportunity(id);
-    const opportunity = updatedOpportunities.find((item) => item.id === id);
-    if (opportunity) {
-      let dataQuotes: QuotesDataTypes = {
-        profit_margins: [],
-        details_items: [],
-        details_materials: [],
-      };
-      const hasQuotes =
-        Array.isArray(opportunity.quotes) && opportunity.quotes.length > 0;
-      if (hasQuotes) {
-        const idsQuotes = opportunity.quotes.map(
-          (quote: QuotesType) => quote.id
-        );
 
-        const { data, error } = await supabase
-          .from("quotes")
-          .select("profit_margins(*), details_items(*), details_materials(*)")
-          .in("id", idsQuotes);
-
-        if (error) {
-          throw new Error(
-            `Error al obtener detalles de quotes: ${error.message}`
-          );
-        }
-
-        if (data?.length) {
-          // Si tenés múltiples quotes, podrías ajustar esta lógica para agrupar todos los datos
-          dataQuotes = data[0];
-        }
-      }
-      const mergedOpportunity = {
-        ...opportunity,
-        ...dataQuotes,
-      };
-      setSelectedClient(mergedOpportunity.client);
-      setSelectedOpportunity(mergedOpportunity);
-    }
-  };
+  /* Revisar */
   const handleSetIsFieldsChanged = (
     isSubmitSuccessful: boolean,
     isDirty: boolean
@@ -398,6 +411,17 @@ export function UIProvider({ children }: { children: ReactNode }) {
     if (isSubmitSuccessful) {
       setIsFieldsChanged(false);
     }
+  };
+  const getUnits = async () => {
+    const { data, error } = await unitsApi.getAll({});
+    if (error)
+      showModal({
+        title: "Error",
+        message: "Hubo un problema la traer las unidades",
+        code: String(error.message),
+        variant: "error",
+      });
+    setUnits(data);
   };
   return (
     <UIContext.Provider
@@ -447,6 +471,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
         getOpportunities,
         opportunities,
         setOpportunities,
+        getOpportunityById,
       }}
     >
       {children}

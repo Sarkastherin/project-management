@@ -1,9 +1,8 @@
 import type { Route } from "../../+types/root";
-import { useUI } from "~/context/UIContext";
 import { ContainerToForms } from "~/components/Generals/Containers";
 import ConditionsForm from "~/templates/ConditionsForm";
-import { ButtonCreateQuote } from "~/components/Specific/ButtonCreateQuote";
-
+import { SectionCreateQuote } from "~/components/Specific/SectionCreateQuote";
+import { useOutletContext } from "react-router";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Oportunidad [Condiciones]" },
@@ -12,16 +11,16 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Conditions() {
-  const { selectedOpportunity } = useUI();
-  const { quotes } = selectedOpportunity || {};
-  if (quotes?.length === 0) return <ButtonCreateQuote />;
-  const quoteActive = quotes?.find((quote) => quote.active);
+  const { selectedQuoteId } = useOutletContext<{
+    selectedQuoteId: number | null;
+  }>();
+  if (!selectedQuoteId) return <SectionCreateQuote />;
 
   return (
     <>
-      {quoteActive && (
+      {selectedQuoteId && (
         <ContainerToForms>
-          <ConditionsForm defaultValues={quoteActive} />
+          <ConditionsForm quoteActive={selectedQuoteId} />
         </ContainerToForms>
       )}
     </>

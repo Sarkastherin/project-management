@@ -2,7 +2,7 @@ import type { Route } from "../../+types/root";
 import { ContainerToForms } from "~/components/Generals/Containers";
 import QuotesForm from "~/templates/QuotesForm";
 import { useUI } from "~/context/UIContext";
-import { ButtonCreateQuote } from "~/components/Specific/ButtonCreateQuote";
+import { SectionCreateQuote } from "~/components/Specific/SectionCreateQuote";
 import { Outlet } from "react-router";
 import { Select } from "~/components/Forms/Inputs";
 import { Button } from "~/components/Forms/Buttons";
@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { ButtonNavigate } from "~/components/Specific/Buttons";
 import { useParams, useNavigate } from "react-router";
 import type { MouseEventHandler } from "react";
-import { useOutlet } from "react-router";
+import { useOutletContext } from "react-router";
 import type { ChangeEventHandler } from "react";
 
 export function meta({}: Route.MetaArgs) {
@@ -24,6 +24,9 @@ type PropsType = {
   label: string;
 };
 export default function Quotes() {
+  const { selectedQuoteId } = useOutletContext<{
+    selectedQuoteId: number | null;
+  }>();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -38,7 +41,7 @@ export default function Quotes() {
   } = useUI();
   const { phases, quotes, details_items, details_materials } =
     selectedOpportunity || {};
-  if (quotes?.length === 0) return <ButtonCreateQuote />;
+  if (quotes?.length === 0) return <SectionCreateQuote />;
   const quoteActive = quotes?.find((quote) => quote.active);
   const { id: id_quote_active } = quoteActive || {};
   const valuesForm = {
@@ -111,7 +114,7 @@ export default function Quotes() {
               ))}
             </div>
           </section>
-          <Outlet />
+          <Outlet context={{selectedQuoteId}}/>
         </div>
       )}
     </>

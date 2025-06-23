@@ -4,10 +4,11 @@ import { Button } from "../Forms/Buttons";
 import { Card } from "../Generals/Cards";
 import React from "react";
 import { ButtonNavigate } from "./Buttons";
+import { useOpportunityRealtime } from "~/backend/realTime";
 const ContainerSection = ({
   title,
   message,
-  children
+  children,
 }: {
   title: string;
   message: string;
@@ -25,8 +26,19 @@ const ContainerSection = ({
     </section>
   );
 };
-export function ButtonCreateQuote() {
-  const { selectedOpportunity, showModal, refreshOpportunity } = useUI();
+export function SectionCreateQuote() {
+  return (
+    <ContainerSection
+      title="Sin Cotización"
+      message="Crea una nueva cotización para esta oportunidad"
+    >
+      <ButtonCreateQuote/>
+    </ContainerSection>
+  );
+}
+export function ButtonCreateQuote({label = "Crear cotización"}: {label?:string}) {
+  useOpportunityRealtime()
+  const { selectedOpportunity, showModal } = useUI();
   const handleCreateQuote = async () => {
     if (selectedOpportunity) {
       showModal({ title: "Procesando", message: "Creando cotización" });
@@ -43,7 +55,6 @@ export function ButtonCreateQuote() {
           code: String(error),
           variant: "error",
         });
-      refreshOpportunity();
       showModal({
         title: "¡Todo OK!",
         message: "Cotización inicializada",
@@ -51,23 +62,18 @@ export function ButtonCreateQuote() {
       });
     }
   };
-  return (
-     <ContainerSection
-      title="Sin Cotización"
-      message="Crea una nueva cotización para esta oportunidad"
-    >
-      <Button onClick={handleCreateQuote}>Crear Cotización</Button>
-    </ContainerSection>
-  );
+  return <Button onClick={handleCreateQuote}>{label}</Button>;
 }
 export function ButtonNavigateDetails() {
-  const { selectedOpportunity} = useUI();
+  const { selectedOpportunity } = useUI();
   return (
-     <ContainerSection
+    <ContainerSection
       title="Cotización sin detalles"
       message="Esta cotización no tiene detalles creados"
     >
-      <ButtonNavigate route={`/opportunity/${selectedOpportunity?.id}/quotes`}>
+      <ButtonNavigate
+        route={`/opportunity/${selectedOpportunity?.id}/quotes/materials`}
+      >
         Ir a Detalles de Cotización
       </ButtonNavigate>
     </ContainerSection>

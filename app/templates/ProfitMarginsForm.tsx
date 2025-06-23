@@ -6,31 +6,34 @@ import ModalClientes from "~/components/Specific/ModalClientes";
 import { useEffect} from "react";
 import  FooterForms from "./FooterForms";
 import {
-  type ProfitMarginInput,
   type ProfitMarginType,
 } from "~/backend/dataBase";
 
-type ProfitMarginsFormProps = {
-  defaultValues: ProfitMarginInput | ProfitMarginType | {};
-};
 export default function ProfitMarginsForm({
-  defaultValues,
-}: ProfitMarginsFormProps) {
-  const { isModeEdit, handleSetIsFieldsChanged  } = useUI();
+  quoteActive,
+}: {quoteActive: number}) {
+  const { isModeEdit, handleSetIsFieldsChanged, selectedOpportunity  } = useUI();
+  const { profit_margins} = selectedOpportunity || {}
   const {
     register,
     formState: { dirtyFields, isSubmitSuccessful, isDirty },
     handleSubmit,
-  } = useForm<ProfitMarginInput>({
-    defaultValues: defaultValues ?? {},
+    reset
+  } = useForm<ProfitMarginType>({
+    defaultValues: {},
   });
-  const onSubmit = async (formData: ProfitMarginInput) => {
+  const onSubmit = async (formData: ProfitMarginType) => {
 
     console.log("formData", formData);
   };
  useEffect(() => {
     handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
   }, [isSubmitSuccessful, isDirty]);
+  useEffect(() => {
+    if(selectedOpportunity) {
+      reset(profit_margins?.find(margins => margins.id_quote === quoteActive))
+    }
+  },[selectedOpportunity, quoteActive])
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>

@@ -1,12 +1,6 @@
 /* Dependencies*/
 import { useEffect } from "react";
-import {
-  Outlet,
-  NavLink,
-  useParams,
-  useNavigate,
-  useLocation,
-} from "react-router";
+import { Outlet, useParams, useNavigate, useLocation } from "react-router";
 import {
   BanknotesIcon,
   PresentationChartBarIcon,
@@ -17,7 +11,10 @@ import {
 /* Contexts */
 import { useUI } from "~/context/UIContext";
 import type { JSX } from "react";
-
+import { useOpportunityRealtime } from "~/backend/realTime";
+import { useState } from "react";
+import { Select } from "~/components/Forms/Inputs";
+import { SectionCreateQuote, ButtonCreateQuote } from "~/components/Specific/SectionCreateQuote";
 const menuItems = (id: number) => {
   return [
     {
@@ -31,37 +28,46 @@ const menuItems = (id: number) => {
       icon: <InboxIcon className="w-4" />,
     },
     {
+      title: "Etapas",
+      href: `/opportunity/${id}/phases`,
+      icon: <InboxIcon className="w-4" />,
+    },
+    {
       title: "Cotización",
       href: `/opportunity/${id}/quotes/materials`,
       icon: <BanknotesIcon className="w-4" />,
     },
     {
-      title: "Margenes",
-      href: `/opportunity/${id}/profit-margin`,
-      icon: <ReceiptPercentIcon className="w-4" />,
-    },
-
-    {
-      title: "Condiciones",
+      title: "Margenes y Condiciones",
       href: `/opportunity/${id}/conditions`,
-      icon: <ExclamationCircleIcon className="w-4" />,
+      icon: <ReceiptPercentIcon className="w-4" />,
     },
   ];
 };
 export default function OpportunityLayout() {
+  useOpportunityRealtime();
   const location = useLocation();
   const navigate = useNavigate();
+  const [selectedQuoteId, setSelectedQuoteId] = useState<number | null>(null);
   const {
     selectedOpportunity,
-    getOpportunity,
     isFieldsChanged,
     setIsFieldsChanged,
+    getOpportunityById,
+    setSelectedClient,
   } = useUI();
   const { id } = useParams();
   const menu = menuItems(Number(id));
   useEffect(() => {
-    getOpportunity(Number(id));
+    getOpportunityById(Number(id));
   }, []);
+  useEffect(() => {
+    if (selectedOpportunity && selectedOpportunity.client) {
+      setSelectedClient(selectedOpportunity.client);
+      const quote = selectedOpportunity?.quotes.find((q) => q.active);
+      setSelectedQuoteId(quote?.id ?? null);
+    }
+  }, [selectedOpportunity]);
   const handleNavigate = (href: string) => {
     if (isFieldsChanged) {
       if (confirm("Tienes cambios sin guardar, ¿deseas continuar?")) {
@@ -85,7 +91,11 @@ export default function OpportunityLayout() {
     return (
       <button
         type="button"
-        className={`cursor-pointer ${isActive ? "font-semibold text-indigo-600 dark:text-indigo-400" : "text-zinc-500 hover:text-indigo-500 dark:hover:text-indigo-400"}`}
+        className={`cursor-pointer ${
+          isActive
+            ? "font-semibold text-indigo-600 dark:text-indigo-400"
+            : "text-zinc-500 hover:text-indigo-500 dark:hover:text-indigo-400"
+        }`}
         onClick={() => handleNavigate(href)}
       >
         <div className="flex gap-2 ">
@@ -104,19 +114,45 @@ export default function OpportunityLayout() {
           </span>
           <h3 className="text-lg font-medium">{selectedOpportunity?.name}</h3>
         </div>
-        <div title="menu bar" className="flex gap-10">
-          {menu.map((item, index) => (
+        <div title="menu bar" className="flex justify-between items-center">
+          <div className="flex gap-10">
+            {menu.map((item, index) => (
               <MyNavLink
                 key={index}
                 href={item.href}
                 icon={item.icon}
                 title={item.title}
               />
-          ))}
+            ))}
+          </div>
+
+          {selectedOpportunity?.quotes &&
+            selectedOpportunity.quotes.length > 0 && (
+              <div className="flex items-baseline justify-between gap-2">
+                <label className="text-sm text-zinc-700 dark:text-zinc-300 mr-2">
+                  Cotización activa:
+                </label>
+                <div className="w-20">
+                  <Select
+                    selectText=""
+                    value={selectedQuoteId ?? undefined}
+                    onChange={(e) => setSelectedQuoteId(Number(e.target.value))}
+                    //className="text-sm border rounded px-2 py-1 dark:bg-zinc-800"
+                  >
+                    {selectedOpportunity.quotes.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.id || `Cotización ${q.id}`}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <ButtonCreateQuote label=" + Nueva Cotización"/>
+              </div>
+            )}
         </div>
       </div>
       {selectedOpportunity ? (
-        <Outlet />
+        <Outlet context={{ selectedQuoteId }} />
       ) : (
         <p className="text-center mt-10">Cargando Oportunidad...</p>
       )}

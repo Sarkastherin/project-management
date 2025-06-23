@@ -18,9 +18,15 @@ export type QuotesInput = {
   estimated_start_date?: string;
   notes?: string;
   history_data?: object;
+  materials: number;
+  labor: number;
+  subcontracting: number;
+  others: number;
+  general: number;
+  
 };
 export type QuotesType = QuotesInput & CommonTypesDataBase;
-type DetailsItemsInput = {
+export type DetailsItemsInput = {
   id_quote: number;
   id_phase: number;
   type: "mano de obra" | "subcontratos" | "otros";
@@ -29,6 +35,7 @@ type DetailsItemsInput = {
   unit_cost: number;
   notes?: string;
   observations?: string;
+  
 };
 export type DetailsItemsType = DetailsItemsInput & CommonTypesDataBase;
 type DetailsMaterialsInput = {

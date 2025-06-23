@@ -86,9 +86,7 @@ export default function QuotesForm({
         code: String(e),
         variant: "error",
       });
-    } finally {
-      refreshOpportunity();
-    }
+    } 
 
     /*  
     try {

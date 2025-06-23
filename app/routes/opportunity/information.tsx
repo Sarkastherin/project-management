@@ -2,7 +2,6 @@ import type { Route } from "../../+types/root";
 import OpportunityForm from "~/templates/OpportunityForm";
 import { useUI } from "~/context/UIContext";
 import { ContainerToForms } from "~/components/Generals/Containers";
-import type { OpportunityFormType } from "~/templates/OpportunityForm";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Oportunidad [Información]" },
@@ -11,18 +10,18 @@ export function meta({}: Route.MetaArgs) {
 }
 export default function Information() {
   const { selectedOpportunity } = useUI();
-
-  let data: OpportunityFormType | null = null;
   if (selectedOpportunity) {
-    const { phases, quotes, ...rest } = selectedOpportunity;
-    data = { phases, ...rest };
+    const { phases, details_items, details_materials, quotes, ...dataOpportunity } = selectedOpportunity;
+    return (
+      <>
+        {phases && (
+          <ContainerToForms>
+            <OpportunityForm mode="view" defaultValues={dataOpportunity} />
+          </ContainerToForms>
+        )}
+      </>
+    );
   }
 
-  return (
-    <ContainerToForms>
-      {data && (
-        <OpportunityForm mode="view" defaultValues={data} />
-      )}
-    </ContainerToForms>
-  );
+  return <p>No hay datos</p>;
 }

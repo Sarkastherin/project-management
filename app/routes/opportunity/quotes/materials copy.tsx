@@ -3,7 +3,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import {
   details_materialsApi,
   type DetailsMaterialsType,
-  type DetailsItemsInput,
+  type DetailsItemsInput
 } from "~/backend/dataBase";
 import { useUI } from "~/context/UIContext";
 import FooterForms from "~/templates/FooterForms";
@@ -12,8 +12,9 @@ import { Input, Select } from "~/components/Forms/Inputs";
 import { ButtonDeleteIcon, ButtonAdd } from "~/components/Specific/Buttons";
 import React, { useEffect, useState } from "react";
 import ModalMateriales from "~/components/Specific/ModalMateriales";
+import ModalPrice from "~/components/Specific/ModalPrice";
+import type { MaterialTypeDB } from "~/context/UIContext";
 import { useOutletContext } from "react-router";
-import { updatesArrayFields, type DirtyMap } from "~/utils/updatesArraysFields";
 type DetailsMaterialFormType = {
   materials: Array<DetailsMaterialsType | DetailsItemsInput>;
 };
@@ -27,26 +28,89 @@ export function meta({}: Route.MetaArgs) {
     { name: "description", content: "Oportunidad [Cotización]" },
   ];
 }
+type MaterialFormType = DetailsMaterialsType & {
+  price: number;
+  name_material?: string; // Solo para mostrar
+  unit_material?: number; // Solo para mostrar
+};
+type DefaultValuesType = {
+  materials: MaterialFormType[];
+};
 export default function Materials() {
   const { selectedQuoteId } = useOutletContext<{
     selectedQuoteId: number | null;
   }>();
-  const [materialsToDelete, setMaterialsToDelete] = useState<
-    Array<DetailsMaterialsType["id"]>
-  >([]);
   const {
     showModal,
+    refreshOpportunity,
     selectedPhase,
     handleSetIsFieldsChanged,
     isModeEdit,
     selectedOpportunity,
+    setOpenMaterialsModal,
     selectedMaterial,
     units,
     materials,
+    getMaterials,
+    getUnits,
+    openPriceModal,
+    setOpenPriceModal,
   } = useUI();
+  const {details_materials} = selectedOpportunity || {}
+  useEffect(() => {
+    const details = details_materials?.find((q) => q.id_quote === selectedQuoteId);
+    if (details) reset(details);
+  }, [details_materials, selectedQuoteId]);
+  
+
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [enrichedMaterials, setEnrichedMaterials] = useState<
+    MaterialFormType[]
+  >([]);
+  const [materialsToDelete, setMaterialsToDelete] = useState<
+    Array<DetailsMaterialsType["id"]>
+  >([]);
+  const [activeMaterial, setActiveMaterial] = useState<MaterialTypeDB | null>(
+    null
+  );
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!materials) await getMaterials();
+      if (!units) await getUnits();
+    };
+    fetchData();
+  }, []);
+  const enrichMaterials = async () => {
+    if (!details_materials || !materials) return;
+
+    const enriched = details_materials.map((item) => {
+      const fullMaterial = materials.find((mat) => mat.id === item.id_material);
+      const defaultPrice = fullMaterial?.prices?.find(
+        (p) => p.id === item.id_price
+      );
+
+      return {
+        ...item,
+        name_material: fullMaterial?.description ?? "Sin nombre",
+        unit_material: fullMaterial?.id_unit ?? undefined,
+        price: defaultPrice?.price ?? 0,
+        id_price: defaultPrice?.id ?? 0,
+      };
+    });
+    setEnrichedMaterials([...enriched].sort((a, b) => a.id - b.id));
+  };
+  /* useEffect(() => {
+    enrichMaterials();
+  }, [details_materials, materials]);
+  useEffect(() => {
+    if (enrichedMaterials.length > 0) {
+      reset({ materials: enrichedMaterials });
+    }
+  }, [enrichedMaterials]); */
+
   const {
     register,
-    formState: { isSubmitSuccessful, isDirty, dirtyFields },
+    formState: { errors, isSubmitSuccessful, isDirty, dirtyFields },
     handleSubmit,
     control,
     watch,
@@ -55,46 +119,56 @@ export default function Materials() {
   } = useForm<DetailsMaterialFormType>({
     defaultValues: { materials: [] },
   });
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: "materials",
   });
-
   const onSubmit = async (formData: DetailsMaterialFormType): Promise<void> => {
-    if (!isDirty) {
-      showModal({
-        title: "Formulario sin cambios",
-        message: "No hay cambios para actualizar'",
-        variant: "information",
-      });
-      return;
-    }
     showModal({
       title: "⌛ Procesando...",
       message: `Procesando requerimiento`,
     });
     try {
-      const { materials } = formData;
-      const newData = await updatesArrayFields({
-        fieldName: "materials",
-        fieldsArray: materials as DetailsMaterialsType[],
-        dirtyFields: dirtyFields as Record<
-          string,
-          Partial<Record<keyof DetailsMaterialsType, boolean>>[]
-        >,
-        fieldsDelete: materialsToDelete,
-        onInsert: details_materialsApi.insertOne,
-        onRemove: (id: number) => details_materialsApi.remove({ id }),
-        onUpdate: details_materialsApi.update,
-      });
-      const oldData = materials.filter(
-        (item): item is DetailsMaterialsType =>
-          "id" in item && typeof item.id === "number"
+      const cleanedMaterials = formData.materials.map(
+        ({ name_material, unit_material, price, ...rest }) => rest
       );
-      reset({
-        materials: [...oldData, ...(Array.isArray(newData) ? newData : [])],
-      });
-      setMaterialsToDelete([]);
+      await Promise.all(
+        cleanedMaterials.map(async (material, i) => {
+          const hasId = "id" in material;
+          if (hasId && dirtyFields.materials?.[i]) {
+            const fieldsChanged = Object.keys(dirtyFields.materials[i]!);
+            const updates: Partial<DetailsMaterialsType> = fieldsChanged.reduce(
+              (acc, key) => {
+                return {
+                  ...acc,
+                  [key]: material[key as keyof DetailsMaterialsType],
+                };
+              },
+              {} as Partial<DetailsMaterialsType>
+            );
+            const { error: errorUpdate } = await details_materialsApi.update({
+              id: material.id!,
+              values: updates,
+            });
+            if (errorUpdate) throw new Error(errorUpdate.message);
+          } else if (!hasId) {
+            const { error: errorInsert } = await details_materialsApi.insertOne(
+              material
+            );
+            if (errorInsert) throw new Error(errorInsert.message);
+          }
+        })
+      );
+      if (materialsToDelete.length > 0) {
+        //Eliminar
+        for (const id of materialsToDelete) {
+          const { error: errorRemove } = await details_materialsApi.remove({
+            id,
+          });
+          if (errorRemove) throw new Error(errorRemove.message);
+        }
+      }
       showModal({
         title: "¡Todo OK!",
         message: "Se han guardado los datos",
@@ -107,12 +181,28 @@ export default function Materials() {
         code: String(e),
         variant: "error",
       });
+    } 
+  };
+  const handleRemove = (index: number) => {
+    const materialItem = enrichedMaterials[index];
+    remove(index);
+    if (materialItem && "id" in materialItem && materialItem.id !== undefined) {
+      setMaterialsToDelete((prev) => [...prev, materialItem.id as number]);
     }
   };
-  const handleAdd = () => {
+  const columnsMaterials = [
+    { groupColsClass: "w-[1%]", label: "#" },
+    { groupColsClass: "", label: "Elemento cotizado" },
+    { groupColsClass: "w-[10%]", label: "Unidad" },
+    { groupColsClass: "w-[10%]", label: "Cantidad" },
+    { groupColsClass: "w-[10%]", label: "Costo unitario" },
+    { groupColsClass: "w-[10%]", label: "Total" },
+    { groupColsClass: "w-[1%]", label: "🗑️" },
+  ];
+  const handleAddMaterial = () => {
     if (selectedPhase && selectedPhase > 0) {
       append({
-        id_quote: selectedQuoteId, // Este valor se asignará al guardar la cotización
+        id_quote: id_quote_active, // Este valor se asignará al guardar la cotización
         id_phase: selectedPhase,
         type: "materiales",
         id_material: 0,
@@ -127,35 +217,13 @@ export default function Materials() {
       });
     }
   };
-  const handleRemove = (index: number) => {
-    //const materialItem = enrichedMaterials[index];
-    remove(index);
-    /* if (materialItem && "id" in materialItem && materialItem.id !== undefined) {
-      setMaterialsToDelete((prev) => [...prev, materialItem.id as number]);
-    } */
-  };
-  const { details_materials } = selectedOpportunity || {};
-  useEffect(() => {
-    const details = details_materials?.filter(
-      (q) => q.id_quote === selectedQuoteId
-    );
-    if (details) reset({materials: details});
-  }, [details_materials, selectedQuoteId]);
-
-  
-  const columnsMaterials = [
-    { groupColsClass: "w-[1%]", label: "#" },
-    { groupColsClass: "", label: "Elemento cotizado" },
-    { groupColsClass: "w-[10%]", label: "Unidad" },
-    { groupColsClass: "w-[10%]", label: "Cantidad" },
-    { groupColsClass: "w-[10%]", label: "Costo unitario" },
-    { groupColsClass: "w-[10%]", label: "Total" },
-    { groupColsClass: "w-[1%]", label: "🗑️" },
-  ];
-  
   useEffect(() => {
     handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
   }, [isSubmitSuccessful, isDirty]);
+  const handlerMaterials = (index: number) => {
+    setActiveIndex(index);
+    setOpenMaterialsModal(true);
+  };
   useEffect(() => {
     if (selectedMaterial && activeIndex !== null) {
       setValue(`materials.${activeIndex}.id_material`, selectedMaterial.id, {
@@ -197,13 +265,40 @@ export default function Materials() {
       }
     }
   }, [selectedMaterial]);
+  const handleTotal = (index: number) => {
+    const prod =
+      roundToPrecision(
+        watch(`materials.${index}.quantity`) *
+          watch(`materials.${index}.price`),
+        2
+      ) || 0;
+    return prod.toLocaleString("es-AR", {
+      style: "currency",
+      currency: "USD",
+    });
+  };
   const Cell = ({ children }: { children: React.ReactNode }) => {
     return <td className="px-1 py-2 whitespace-nowrap">{children}</td>;
   };
   const handleOpenPrices = (index: number) => {
     const id_material = watch(`materials.${index}.id_material`);
     const material = materials?.find((material) => material.id === id_material);
+    if (material) {
+      setActiveIndex(index); // <--- NUEVO
+      setActiveMaterial(material);
+    }
   };
+
+  useEffect(() => {
+    if (activeMaterial) {
+      setOpenPriceModal(true);
+    }
+  }, [activeMaterial]);
+  useEffect(() => {
+    if (!openPriceModal) {
+      setActiveMaterial(null);
+    }
+  }, [openPriceModal]);
   return (
     <>
       {selectedPhase && materials && units && (
@@ -245,14 +340,23 @@ export default function Materials() {
                             className="sr-only"
                           />
                           <Input
+                            value={
+                              watch(`materials.${index}.name_material`) ?? ""
+                            }
                             readOnly
                             placeholder="Material"
+                            onClick={() => handlerMaterials(index)}
+                            error={
+                              errors.materials &&
+                              errors.materials[index]?.id_material?.message
+                            }
                           />
                         </Cell>
                         {/* Unidad (no registrada, solo visible) */}
                         <Cell>
                           <Select
                             disabled
+                            value={watch(`materials.${index}.unit_material`)}
                           >
                             {units?.map((unit) => (
                               <option key={unit.id} value={unit.id}>
@@ -297,6 +401,12 @@ export default function Materials() {
                             })}
                           />
                           <Input
+                            value={(
+                              watch(`materials.${index}.price`) ?? 0
+                            ).toLocaleString("es-AR", {
+                              style: "currency",
+                              currency: "USD",
+                            })}
                             readOnly
                             placeholder="$ 0.00"
                             onClick={() => handleOpenPrices(index)}
@@ -308,6 +418,7 @@ export default function Materials() {
                           <Input
                             readOnly
                             type="text"
+                            value={handleTotal(index)}
                             placeholder="Total"
                           />
                         </Cell>
@@ -323,14 +434,14 @@ export default function Materials() {
                 </TableDetailsQuotes>
                 <ButtonAdd
                   title="Agregar Material"
-                  onClick={handleAdd}
+                  onClick={handleAddMaterial}
                 />
               </div>
             </fieldset>
             <FooterForms mode="view" />
           </form>
           <ModalMateriales />
-          {/* {activeMaterial && activeIndex !== null && (
+          {activeMaterial && activeIndex !== null && (
             <ModalPrice
               modalMode={true}
               idMaterial={activeMaterial.id}
@@ -346,7 +457,7 @@ export default function Materials() {
                 setOpenPriceModal(false);
               }}
             />
-          )} */}
+          )}
         </>
       )}
     </>

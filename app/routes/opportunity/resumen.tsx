@@ -54,10 +54,6 @@ export default function Resumen() {
                 label={"Monto de Cotización"}
                 value={"$ 0.00"}
               />
-              <DataField
-                label={"Cliente"}
-                value={selectedClient?.nombre || ""}
-              />
               <div className="flex justify-between mb-2 gap-4 text-sm">
               <span className="flex-none flex items-center font-semibold">
                 {"Status"}:

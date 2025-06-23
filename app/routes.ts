@@ -19,8 +19,8 @@ export default [
       layout("layouts/opportunity.tsx", [
         route(":id/resumen", "routes/opportunity/resumen.tsx"),
         route(":id/information", "routes/opportunity/information.tsx"),
+        route(":id/phases","routes/opportunity/phases.tsx"),
         route(":id/conditions", "routes/opportunity/conditions.tsx"),
-        //route(":id/quotes", "routes/opportunity/quotes.tsx"),
         layout("routes/opportunity/quotes.tsx", [
           route(":id/quotes/items", "routes/opportunity/quotes/items.tsx"),
           route(

@@ -47,9 +47,7 @@ export default function Items() {
         code: String(e),
         variant: "error",
       });
-    } finally {
-      refreshOpportunity();
-    }
+    } 
   };
   const columnsItems = [
     { groupColsClass: "w-[1%]", label: "#" },

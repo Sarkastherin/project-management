@@ -1,17 +1,19 @@
-import { data } from "react-router";
 import type {
   UpdateorDeleteResponse,
   CommonResponse,
 } from "~/backend/crudFactory";
 
-type DirtyMap<T> = Partial<Record<keyof T, boolean>>;
+export type DirtyMap<T> = Partial<Record<keyof T, boolean>>;
 
 type Props<T> = {
   fieldsArray: T[];
   dirtyFields: Record<string, DirtyMap<T>[]>;
   fieldName: string; // ejemplo: 'prices'
   fieldsDelete: number[];
-  onUpdate: (args: { id: number; values: Partial<T> }) => Promise<UpdateorDeleteResponse>;
+  onUpdate: (args: {
+    id: number;
+    values: Partial<T>;
+  }) => Promise<UpdateorDeleteResponse>;
   onInsert: (data: T) => Promise<CommonResponse<T>>;
   onRemove: (id: number) => Promise<UpdateorDeleteResponse>;
 };
@@ -26,7 +28,7 @@ export const updatesArrayFields = async <T extends object>({
   onRemove,
 }: Props<T>): Promise<T[]> => {
   const dirtyArray = dirtyFields[fieldName] ?? [];
-let newData: T[] = []
+  let newData: T[] = [];
   await Promise.all(
     fieldsArray.map(async (field, i) => {
       const hasId = "id" in field;
@@ -46,7 +48,7 @@ let newData: T[] = []
         });
         if (errorUpdate) throw new Error(errorUpdate.message);
       } else if (!hasId) {
-        const { data: dataInsert ,error: errorInsert } = await onInsert(field);
+        const { data: dataInsert, error: errorInsert } = await onInsert(field);
         if (errorInsert) throw new Error(errorInsert.message);
 
         if (dataInsert !== null) {
@@ -60,5 +62,5 @@ let newData: T[] = []
     const { error: errorRemove } = await onRemove(id);
     if (errorRemove) throw new Error(errorRemove.message);
   }
-  return newData
+  return newData;
 };

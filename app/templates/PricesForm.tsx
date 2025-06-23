@@ -31,7 +31,6 @@ export default function PricesForm({
   onSelectPrice?: (price: { id: number; price: number }) => void;
 }) {
   usePricesRealtime();
-  const navigate = useNavigate();
   const { suppliers } = useContacts();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [pricesToDelete, setPricesToDelete] = useState<Array<PricesType["id"]>>(
@@ -42,7 +41,6 @@ export default function PricesForm({
     selectedSupplier,
     showModal,
     isModeEdit,
-    materials,
   } = useUI();
   const {
     register,
@@ -288,7 +286,7 @@ export default function PricesForm({
             </table>
             <div className="mt-4">
               <ButtonAdd
-                aria-label="Agregar nueva etapa"
+                aria-label="Agregar nuevo precio"
                 onClick={handleAddPrice}
               />
             </div>

@@ -32,6 +32,7 @@ const menuItems = (id: number) => {
   ];
 };
 export default function OpportunityLayout() {
+  
   const location = useLocation();
   const navigate = useNavigate();
   const {
