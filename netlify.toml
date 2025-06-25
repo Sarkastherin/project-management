@@ -1,6 +1,6 @@
 [build]
   functions = "netlify/functions"
-  publish = "dist" # Esto depende del build de Vite
+  publish = "build" # Esto depende del build de Vite
 
 [dev]
   functions = "netlify/functions"

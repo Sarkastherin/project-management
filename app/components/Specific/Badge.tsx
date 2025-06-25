@@ -1,5 +1,5 @@
 import type React from "react";
-import type { StatusType } from "~/backend/dataBase";
+import type { StatusType } from "~/types/database";
 
 type BadgeStatusType = {
   variant: StatusType;
@@ -10,7 +10,7 @@ export default function BadgeStatus({ variant,children }: BadgeStatusType) {
     "Nuevo": "bg-blue-200 text-blue-700",
     "Desestimada": "bg-gray-200 text-gray-700",
     "En proceso": "bg-amber-200 text-amber-700",
-    "Enviada": "bg-indigo-200 text-indigo-700",
+    "Enviada": "bg-purple-300 text-purple-700",
     "Revisión": "bg-orange-200 text-orange-700",
     "Ganada": "bg-green-200 text-green-700",
     "Perdida": "bg-red-200 text-red-700",
