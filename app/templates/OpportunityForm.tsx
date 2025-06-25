@@ -10,6 +10,7 @@ import type { OpportunityInput, OpportunityType } from "~/types/database";
 import FooterForms from "./FooterForms";
 import { useNavigate } from "react-router";
 import { updateSingleRow } from "~/utils/updatesSingleRow";
+import { useFieldsChange } from "~/utils/fieldsChange";
 export default function OpportunityForm({
   defaultValues,
   mode,
@@ -39,6 +40,7 @@ export default function OpportunityForm({
       created_by: "",
     },
   });
+  useFieldsChange({isSubmitSuccessful, isDirty})
   useEffect(() => {
     if (selectedClient && selectedClient.id !== watch("id_client")) {
       setValue("id_client", selectedClient.id, { shouldDirty: true });
@@ -100,9 +102,7 @@ export default function OpportunityForm({
     }
   };
   const isLost = watch("status") === "Perdida";
-  useEffect(() => {
-    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
-  }, [isSubmitSuccessful, isDirty]);
+  
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>

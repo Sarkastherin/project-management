@@ -6,15 +6,17 @@ import {
   PresentationChartBarIcon,
   InboxIcon,
   ReceiptPercentIcon,
-  ExclamationCircleIcon,
+  SwatchIcon,
 } from "@heroicons/react/16/solid";
 /* Contexts */
 import { useUI } from "~/context/UIContext";
 import type { JSX } from "react";
 import { useOpportunityRealtime } from "~/backend/realTime";
 import { useState } from "react";
-import { Select } from "~/components/Forms/Inputs";
-import { SectionCreateQuote, ButtonCreateQuote } from "~/components/Specific/SectionCreateQuote";
+import { Input } from "~/components/Forms/Inputs";
+import { ButtonCreateQuote } from "~/components/Specific/SectionCreateQuote";
+import { Button } from "~/components/Forms/Buttons";
+import { quotesApi } from "~/backend/dataBase";
 const menuItems = (id: number) => {
   return [
     {
@@ -30,7 +32,7 @@ const menuItems = (id: number) => {
     {
       title: "Etapas",
       href: `/opportunity/${id}/phases`,
-      icon: <InboxIcon className="w-4" />,
+      icon: <SwatchIcon className="w-4" />,
     },
     {
       title: "Cotización",
@@ -55,6 +57,7 @@ export default function OpportunityLayout() {
     setIsFieldsChanged,
     getOpportunityById,
     setSelectedClient,
+    showModal,
   } = useUI();
   const { id } = useParams();
   const menu = menuItems(Number(id));
@@ -105,6 +108,10 @@ export default function OpportunityLayout() {
       </button>
     );
   };
+  const [hidden, setHidden] = useState(true);
+  const onClose = () => {
+    setHidden(true);
+  };
   return (
     <>
       <div className="px-10 pb-2 border-b border-zinc-100 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-zinc-700/25">
@@ -133,20 +140,13 @@ export default function OpportunityLayout() {
                   Cotización activa:
                 </label>
                 <div className="w-20">
-                  <Select
-                    selectText=""
-                    value={selectedQuoteId ?? undefined}
-                    onChange={(e) => setSelectedQuoteId(Number(e.target.value))}
-                    //className="text-sm border rounded px-2 py-1 dark:bg-zinc-800"
-                  >
-                    {selectedOpportunity.quotes.map((q) => (
-                      <option key={q.id} value={q.id}>
-                        {q.id || `Cotización ${q.id}`}
-                      </option>
-                    ))}
-                  </Select>
+                  <Input
+                    defaultValue={selectedQuoteId ?? undefined}
+                    readOnly
+                    onClick={() => setHidden(false)}
+                  />
                 </div>
-                <ButtonCreateQuote label=" + Nueva Cotización"/>
+                <ButtonCreateQuote label=" + Nueva Cotización" />
               </div>
             )}
         </div>
@@ -156,6 +156,133 @@ export default function OpportunityLayout() {
       ) : (
         <p className="text-center mt-10">Cargando Oportunidad...</p>
       )}
+      <div
+        className={`fixed inset-0 z-50 grid place-content-center bg-white/10 p-4 ${
+          hidden && "hidden"
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+      >
+        <div
+          className={`w-full max-w-lg min-w-sm rounded-lg bg-white p-6 shadow-lg dark:bg-zinc-900 text-indigo-600 dark:text-indigo-400`}
+        >
+          <div className="flex items-start justify-between">
+            <h2 id="modalTitle" className="text-xl font-bold sm:text-2xl">
+              {"Cambiar de cotización"}
+            </h2>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="-me-4 -mt-4 rounded-full p-2 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-600 focus:outline-none dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+              aria-label="Cerrar"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="size-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <fieldset className="space-y-3">
+              <legend className="sr-only">Cambiar cotización activa</legend>
+              {selectedOpportunity?.quotes.map((q) => (
+                <div key={q.id}>
+                  <label
+                    htmlFor={q.id.toLocaleString()}
+                    className="flex items-center justify-between gap-4 rounded border border-zinc-300 bg-white p-3 text-sm font-medium shadow-sm transition-colors hover:bg-zinc-50 has-checked:border-indigo-600 has-checked:ring-1 has-checked:ring-indigo-600 dark:border-zinc-600 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                  >
+                    <p className="text-zinc-700 dark:text-zinc-200">
+                      Id Cotización N° {q.id}
+                    </p>
+
+                    <p className="text-zinc-900 dark:text-white">
+                      Monto:{" "}
+                      {(q.t_mg_total ?? 0).toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      })}
+                    </p>
+
+                    <input
+                      id={q.id.toLocaleString()}
+                      type="radio"
+                      name="SelectedQuote"
+                      className="sr-only"
+                      value={q.id.toLocaleString()}
+                      checked={q.active}
+                      onChange={async () => {
+                        if (q.active) return;
+
+                        const currentActive = selectedOpportunity?.quotes.find(
+                          (q) => q.active
+                        );
+                        const currentId = currentActive?.id;
+
+                        // Desactivar la actual
+                        if (currentId) {
+                          const { error: deactivateError } =
+                            await quotesApi.update({
+                              id: currentId,
+                              values: { active: false },
+                            });
+
+                          if (deactivateError) {
+                            showModal({
+                              title: "Error",
+                              message:
+                                "No se pudo desactivar la cotización anterior.",
+                              variant: "error",
+                            });
+                            return;
+                          }
+                        }
+
+                        // Activar la nueva
+                        const { error: activateError } = await quotesApi.update(
+                          {
+                            id: q.id,
+                            values: { active: true },
+                          }
+                        );
+
+                        if (activateError) {
+                          showModal({
+                            title: "Error",
+                            message: "No se pudo activar la nueva cotización.",
+                            variant: "error",
+                          });
+                        } else {
+                          await getOpportunityById(Number(id)); // refrescar para reflejar cambios
+                          setHidden(true);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              ))}
+            </fieldset>
+          </div>
+
+          <footer className="mt-6 flex justify-end">
+            <Button type="button" onClick={onClose} variant="secondary">
+              Cerrar
+            </Button>
+          </footer>
+        </div>
+      </div>
     </>
   );
 }

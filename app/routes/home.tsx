@@ -1,8 +1,8 @@
 import type { Route } from "./+types/home";
-import { ButtonNavigate } from "~/components/Specific/Buttons";
 import { Button } from "~/components/Forms/Buttons";
 import { useUI } from "~/context/UIContext";
 import ModalProveedores from "~/components/Specific/ModalProveedores";
+
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Bienvenido" },

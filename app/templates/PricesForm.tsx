@@ -28,7 +28,7 @@ export default function PricesForm({
   defaultValues: PricesFormType;
   idMaterial: number | null;
   modalMode: boolean;
-  onSelectPrice?: (price: { id: number; price: number }) => void;
+  onSelectPrice?: (price: { id: number; price: PricesType }) => void;
 }) {
   usePricesRealtime();
   const { suppliers } = useContacts();
@@ -36,12 +36,8 @@ export default function PricesForm({
   const [pricesToDelete, setPricesToDelete] = useState<Array<PricesType["id"]>>(
     []
   );
-  const {
-    setOpenSupplierModal,
-    selectedSupplier,
-    showModal,
-    isModeEdit,
-  } = useUI();
+  const { setOpenSupplierModal, selectedSupplier, showModal, isModeEdit } =
+    useUI();
   const {
     register,
     watch,
@@ -104,9 +100,12 @@ export default function PricesForm({
         variant: "success",
       });
       const oldData = prices.filter(
-        (item): item is PricesType => "id" in item && typeof item.id === "number"
+        (item): item is PricesType =>
+          "id" in item && typeof item.id === "number"
       );
-      reset({prices: [...oldData, ...(Array.isArray(newData) ? newData : [])]})
+      reset({
+        prices: [...oldData, ...(Array.isArray(newData) ? newData : [])],
+      });
       setPricesToDelete([]);
     } catch (e) {
       showModal({
@@ -268,11 +267,9 @@ export default function PricesForm({
                           disabled={!watch(`prices.${index}.id`)}
                           onClick={() => {
                             const priceId = Number(watch(`prices.${index}.id`));
-                            const priceValue = Number(
-                              watch(`prices.${index}.price`)
-                            );
+                            const price = watch(`prices.${index}`) as PricesType;
                             if (priceId > 0) {
-                              onSelectPrice({ id: priceId, price: priceValue });
+                              onSelectPrice({ id: priceId, price: price });
                             }
                           }}
                         >

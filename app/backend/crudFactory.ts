@@ -86,7 +86,13 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
       } catch (err) {
         return {
           data: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error
+              ? err
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
           count: null,
         };
       }
@@ -103,7 +109,13 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         console.log(err);
         return {
           data: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error
+              ? err
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
         };
       }
     },
@@ -124,7 +136,13 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
       } catch (err) {
         return {
           data: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error
+              ? err
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
           count: null,
         };
       }
@@ -140,7 +158,13 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
       } catch (err) {
         return {
           status: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error
+              ? err
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
         };
       }
     },
@@ -165,7 +189,13 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
 
         return {
           status: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error
+              ? err
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
         };
       }
     },
@@ -215,7 +245,13 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
         console.log(err);
         return {
           data: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error
+              ? err
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
           count: null,
         };
       }
@@ -234,7 +270,13 @@ export const createCrud = <TFull, TInsert extends object>(table: string) => {
       } catch (err) {
         return {
           data: null,
-          error: err instanceof Error ? err : new Error("Error inesperado"),
+          error: err instanceof Error
+              ? err
+              : new Error(
+                  typeof err === "object" && err !== null && "message" in err
+                    ? (err as any).message
+                    : String(err)
+                ),
           count: null,
         };
       }

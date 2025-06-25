@@ -5,6 +5,9 @@ type TableDetailsProps = {
   title: string;
   columns: { groupColsClass: string; label: string }[];
 };
+export const Cell = ({ children }: { children: React.ReactNode }) => {
+    return <td className="px-1 py-2 whitespace-nowrap">{children}</td>;
+  };
 export function TableDetailsQuotes({
   children,
   title,

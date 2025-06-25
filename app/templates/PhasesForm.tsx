@@ -6,7 +6,7 @@ import { useUI } from "~/context/UIContext";
 import ModalClientes from "~/components/Specific/ModalClientes";
 import { useEffect, useState } from "react";
 import { updatesArrayFields } from "~/utils/updatesArraysFields";
-//import { useOpportunityRealtime } from "~/backend/realTime";
+import { useFieldsChange } from "~/utils/fieldsChange";
 import {
   phasesApi,
   type PhasesInput,
@@ -25,7 +25,6 @@ export default function PhasesForm({
   idOpportunity: number;
   mode: "create" | "view";
 }) {
-     //useOpportunityRealtime()
   const [phasesToDelete, setPhasesToDelete] = useState<Array<PhasesType["id"]>>(
     []
   );
@@ -113,9 +112,7 @@ export default function PhasesForm({
       setPhasesToDelete((prev) => [...prev, phasesIndex.id as number]);
     }
   };
-  useEffect(() => {
-    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
-  }, [isSubmitSuccessful, isDirty]);
+  useFieldsChange({isSubmitSuccessful, isDirty})
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>

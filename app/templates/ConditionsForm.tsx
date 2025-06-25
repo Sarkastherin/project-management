@@ -6,33 +6,46 @@ import { quotesApi, type QuotesType } from "~/backend/dataBase";
 import FooterForms from "./FooterForms";
 import { useEffect } from "react";
 import { updateSingleRow, type DirtyMap } from "~/utils/updatesSingleRow";
-
+import { useFieldsChange } from "~/utils/fieldsChange";
+//import { roundToPrecision } from "~/utils/functions";
+import type { QuotesEnrichType } from "~/context/UIContext";
 export default function ConditionsForm({
   quoteActive,
 }: {
   quoteActive: number;
 }) {
-  const {
-    showModal,
-    isModeEdit,
-    handleSetIsFieldsChanged,
-    selectedOpportunity,
-  } = useUI();
+  const { showModal, isModeEdit, selectedOpportunity } = useUI();
   const { quotes } = selectedOpportunity || {};
   const {
     register,
-    formState: { dirtyFields, isSubmitting, isSubmitSuccessful, isDirty },
+    formState: { dirtyFields, isSubmitSuccessful, isDirty },
     handleSubmit,
     reset,
-  } = useForm<QuotesType>({
+    watch,
+    setValue,
+  } = useForm<QuotesEnrichType>({
     defaultValues: {},
   });
-  const onSubmit = async (formData: QuotesType): Promise<void> => {
+  const onSubmit = async (formData: QuotesEnrichType): Promise<void> => {
     showModal({
       title: "⌛ Procesando...",
       message: `Procesando requerimiento`,
     });
     try {
+      const {
+        t_mg_materials,
+        t_mg_labor,
+        t_mg_subcontracting,
+        t_mg_others,
+        total,
+        total_materials,
+        total_labor,
+        total_subcontracting,
+        total_others,
+        t_mg_total,
+        ...propsQuote
+      } = formData;
+      console.log(propsQuote);
       await updateSingleRow({
         dirtyFields: dirtyFields as DirtyMap<QuotesType>,
         formData: formData,
@@ -62,14 +75,36 @@ export default function ConditionsForm({
     { description: "contra envio de factura por e-cheq a 30 días" },
     { description: "Otro" },
   ];
-  useEffect(() => {
-    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
-  }, [isSubmitSuccessful, isDirty]);
+  useFieldsChange({ isSubmitSuccessful, isDirty });
   useEffect(() => {
     const quote = quotes?.find((q) => q.id === quoteActive);
     if (quote) reset(quote);
   }, [quotes, quoteActive]);
-
+  const handleChangeTotalMS = (
+    totalLabel:
+      | "total_materials"
+      | "total_labor"
+      | "total_subcontracting"
+      | "total_others"
+      | "total",
+    percentLabel:
+      | "materials"
+      | "labor"
+      | "subcontracting"
+      | "others"
+      | "general",
+    setValueLabel:
+      | "t_mg_materials"
+      | "t_mg_labor"
+      | "t_mg_subcontracting"
+      | "t_mg_others"
+      | "t_mg_total"
+  ) => {
+    const total: number = watch(totalLabel);
+    const percent = watch(percentLabel);
+    const safePercent = percent ?? 0;
+    setValue(setValueLabel, total * (1 + safePercent / 100));
+  };
   return (
     <>
       <form className=" flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
@@ -164,43 +199,123 @@ export default function ConditionsForm({
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
                   <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
                     <td className="px-3 py-2 whitespace-nowrap">Materiales</td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("total_materials")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">0 %</td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <Input placeholder="0%" {...register("materials")} />
+                      <Input
+                        placeholder="0 %"
+                        {...register("materials", {
+                          onChange: (e) =>
+                            handleChangeTotalMS(
+                              "total_materials",
+                              "materials",
+                              "t_mg_materials"
+                            ),
+                        })}
+                      />
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("t_mg_materials")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                   </tr>
                   <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
                     <td className="px-3 py-2 whitespace-nowrap">
                       Mano de obra
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("total_labor")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">0 %</td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <Input placeholder="0%" {...register("labor")} />
+                      <Input
+                        placeholder="0%"
+                        {...register("labor", {
+                          onChange: (e) =>
+                            handleChangeTotalMS(
+                              "total_labor",
+                              "labor",
+                              "t_mg_labor"
+                            ),
+                        })}
+                      />
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("t_mg_labor")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                   </tr>
                   <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
                     <td className="px-3 py-2 whitespace-nowrap">
                       Subcontratos
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("total_subcontracting")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">0 %</td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <Input placeholder="0%" {...register("subcontracting")} />
+                      <Input
+                        placeholder="0%"
+                        {...register("subcontracting", {
+                          onChange: (e) =>
+                            handleChangeTotalMS(
+                              "total_subcontracting",
+                              "subcontracting",
+                              "t_mg_subcontracting"
+                            ),
+                        })}
+                      />
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("t_mg_subcontracting")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                   </tr>
                   <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
                     <td className="px-3 py-2 whitespace-nowrap">Otros</td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("total_others")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">0 %</td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <Input placeholder="0%" {...register("others")} />
+                      <Input
+                        placeholder="0%"
+                        {...register("others", {
+                          onChange: (e) =>
+                            handleChangeTotalMS(
+                              "total_others",
+                              "others",
+                              "t_mg_others"
+                            ),
+                        })}
+                      />
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {watch("t_mg_others")?.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "USD",
+                      }) || "$ 0.00"}
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -224,11 +339,28 @@ export default function ConditionsForm({
               </thead>
               <tbody className="">
                 <tr className="*:text-zinc-900 *:first:font-medium dark:*:text-white">
-                  <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
                   <td className="px-3 py-2 whitespace-nowrap">
-                    <Input placeholder="0%" {...register("general")} />
+                    {watch("total")?.toLocaleString("es-AR", {
+                      style: "currency",
+                      currency: "USD",
+                    }) || "$ 0.00"}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">US$ 0.00</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <Input
+                      placeholder="0%"
+                      {...register("general", {
+                        valueAsNumber: true,
+                        onChange: (e) =>
+                          handleChangeTotalMS("total", "general", "t_mg_total"),
+                      })}
+                    />
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {watch("t_mg_total")?.toLocaleString("es-AR", {
+                      style: "currency",
+                      currency: "USD",
+                    }) || "$ 0.00"}
+                  </td>
                 </tr>
               </tbody>
             </table>

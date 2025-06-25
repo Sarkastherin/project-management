@@ -50,7 +50,7 @@ export const Input = ({
     </label>
   );
 };
-type SelectProps = {
+export type SelectProps = {
   selectText?: string;
   children?: React.ReactNode;
 } & CommonInputsProps &

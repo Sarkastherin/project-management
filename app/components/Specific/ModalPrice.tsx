@@ -1,27 +1,22 @@
 import { useUI } from "~/context/UIContext";
 import PricesForm from "~/templates/PricesForm";
-import type { PricesType, PricesInput } from "~/backend/dataBase";
-import type { PricesFormType } from "~/templates/PricesForm";
+import type { PricesType } from "~/backend/dataBase";
 type PricesModalType = {
-  defaultValues: PricesFormType;
-  idMaterial: number;
-  modalMode: boolean;
-  onSelectPrice: (price: { id: number; price: number }) => void;
+  activeIndex: number | null;
+  onSelectPrice?: (price: { id: number; price: PricesType }) => void;
 };
 export default function ModalPrice({
-  defaultValues,
-  idMaterial,
-  modalMode,
+  activeIndex,
   onSelectPrice,
 }: PricesModalType) {
   const { openPriceModal, setOpenPriceModal } = useUI();
   const handlerCloseModal = () => {
-    setOpenPriceModal(false);
+    setOpenPriceModal({ open: false, data: null, idMaterial: null });
   };
   return (
     <div
       className={`fixed inset-0 z-50 flex justify-center items-start bg-white/10 p-4 ${
-        !openPriceModal && "hidden"
+        !openPriceModal.open && "hidden"
       }`}
       role="dialog"
       aria-modal="false"
@@ -59,12 +54,14 @@ export default function ModalPrice({
           </button>
         </div>
         <div className="mt-4">
-          <PricesForm
-            defaultValues={defaultValues}
-            idMaterial={idMaterial}
-            modalMode={modalMode}
-            onSelectPrice={onSelectPrice}
-          />
+          {openPriceModal.data && (
+            <PricesForm
+              defaultValues={{ prices: openPriceModal.data }}
+              idMaterial={openPriceModal.idMaterial}
+              modalMode={true}
+              onSelectPrice={onSelectPrice}
+            />
+          )}
         </div>
       </div>
     </div>

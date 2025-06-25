@@ -18,11 +18,11 @@ export type QuotesInput = {
   estimated_start_date?: string;
   notes?: string;
   history_data?: object;
-  materials: number;
-  labor: number;
-  subcontracting: number;
-  others: number;
-  general: number;
+  materials?: number;
+  labor?: number;
+  subcontracting?: number;
+  others?: number;
+  general?: number;
   
 };
 export type QuotesType = QuotesInput & CommonTypesDataBase;
@@ -35,10 +35,11 @@ export type DetailsItemsInput = {
   unit_cost: number;
   notes?: string;
   observations?: string;
+  total?: number
   
 };
 export type DetailsItemsType = DetailsItemsInput & CommonTypesDataBase;
-type DetailsMaterialsInput = {
+export type DetailsMaterialsInput = {
   id_quote: number;
   id_phase: number;
   type: "materiales";

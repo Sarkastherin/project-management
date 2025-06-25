@@ -12,6 +12,7 @@ import FooterForms from "./FooterForms";
 import { useEffect, useState, type ChangeEventHandler } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useMaterialsRealtime } from "~/backend/realTime";
+import { SelectUnits } from "~/components/Specific/SelectUnits";
 
 export type MaterialFormType = MaterialsInput | MaterialsType;
 type MaterialFormProps = {
@@ -25,7 +26,7 @@ export const MaterialForm = ({
   mode,
   categorization,
 }: MaterialFormProps) => {
-  useMaterialsRealtime()
+  useMaterialsRealtime();
   const { id } = useParams();
   const navigate = useNavigate();
   const [filterCategories, setFilterCategories] = useState<
@@ -41,10 +42,6 @@ export const MaterialForm = ({
     getCategorizations,
     categorizations,
     setSelectedMaterial,
-    getUnits,
-    units,
-    refreshMaterial,
-    getMaterials,
   } = useUI();
   const {
     register,
@@ -126,9 +123,6 @@ export const MaterialForm = ({
   useEffect(() => {
     if (!categorizations) {
       getCategorizations();
-    }
-    if (!units) {
-      getUnits();
     }
   }, []);
   const loadCategorysByFamily = (id_family: number) => {
@@ -234,21 +228,14 @@ export const MaterialForm = ({
                   error={errors.description?.message}
                 />
                 <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-2">
-                  <Select
+                  <SelectUnits
                     label="Unidad"
-                    selectText="Selecciona unidad"
                     {...register("id_unit", {
                       required: "Campo requerido",
                       valueAsNumber: true,
                     })}
                     error={errors.id_unit?.message}
-                  >
-                    {units?.map((unit) => (
-                      <option key={unit.id} value={unit.id}>
-                        {unit.description}
-                      </option>
-                    ))}
-                  </Select>
+                  />
                   <Input
                     label="Peso"
                     type="number"

@@ -28,7 +28,6 @@ export default [
             "routes/opportunity/quotes/materials.tsx"
           ),
         ]),
-        route(":id/profit-margin", "routes/opportunity/profit-margin.tsx"),
       ]),
     ]),
     ...prefix("material", [

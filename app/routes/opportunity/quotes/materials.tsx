@@ -3,30 +3,36 @@ import { useForm, useFieldArray } from "react-hook-form";
 import {
   details_materialsApi,
   type DetailsMaterialsType,
-  type DetailsItemsInput,
 } from "~/backend/dataBase";
-import { useUI } from "~/context/UIContext";
+import { useUI, type MaterialTypeDB } from "~/context/UIContext";
 import FooterForms from "~/templates/FooterForms";
-import { TableDetailsQuotes } from "~/templates/TableDetailsQuotes";
+import { TableDetailsQuotes, Cell } from "~/templates/TableDetailsQuotes";
 import { Input, Select } from "~/components/Forms/Inputs";
 import { ButtonDeleteIcon, ButtonAdd } from "~/components/Specific/Buttons";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import ModalMateriales from "~/components/Specific/ModalMateriales";
 import { useOutletContext } from "react-router";
-import { updatesArrayFields, type DirtyMap } from "~/utils/updatesArraysFields";
-type DetailsMaterialFormType = {
-  materials: Array<DetailsMaterialsType | DetailsItemsInput>;
-};
-const roundToPrecision = (value: number, decimalCount: number) => {
-  const pow = Math.pow(10, decimalCount);
-  return Math.round((value + Number.EPSILON) * pow) / pow;
-};
+import { updatesArrayFields } from "~/utils/updatesArraysFields";
+import { roundToPrecision } from "~/utils/functions";
+import type { PricesType, MaterialsType } from "~/backend/dataBase";
+import { SelectUnits } from "~/components/Specific/SelectUnits";
+import ModalPrice from "~/components/Specific/ModalPrice";
+import { useFieldsChange } from "~/utils/fieldsChange";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Oportunidad [Cotización]" },
     { name: "description", content: "Oportunidad [Cotización]" },
   ];
 }
+
+type DetailsMaterialForm = {
+  materials: Array<
+    DetailsMaterialsType & {
+      materials: MaterialsType;
+      prices: PricesType | {};
+    }
+  >;
+};
 export default function Materials() {
   const { selectedQuoteId } = useOutletContext<{
     selectedQuoteId: number | null;
@@ -34,24 +40,26 @@ export default function Materials() {
   const [materialsToDelete, setMaterialsToDelete] = useState<
     Array<DetailsMaterialsType["id"]>
   >([]);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const {
     showModal,
     selectedPhase,
     handleSetIsFieldsChanged,
     isModeEdit,
     selectedOpportunity,
-    units,
+    setOpenMaterialsModal,
+    setOpenPriceModal,
     materials,
   } = useUI();
   const {
     register,
-    formState: { isSubmitSuccessful, isDirty, dirtyFields },
+    formState: { isSubmitSuccessful, isDirty, dirtyFields, errors },
     handleSubmit,
     control,
     watch,
     setValue,
     reset,
-  } = useForm<DetailsMaterialFormType>({
+  } = useForm<DetailsMaterialForm>({
     defaultValues: { materials: [] },
   });
   const { fields, append, remove } = useFieldArray({
@@ -59,7 +67,7 @@ export default function Materials() {
     name: "materials",
   });
 
-  const onSubmit = async (formData: DetailsMaterialFormType): Promise<void> => {
+  const onSubmit = async (formData: DetailsMaterialForm): Promise<void> => {
     if (!isDirty) {
       showModal({
         title: "Formulario sin cambios",
@@ -74,9 +82,12 @@ export default function Materials() {
     });
     try {
       const { materials } = formData;
+      const cleanedMaterials = materials.map(
+        ({ materials, prices, ...rest }) => rest
+      );
       const newData = await updatesArrayFields({
         fieldName: "materials",
-        fieldsArray: materials as DetailsMaterialsType[],
+        fieldsArray: cleanedMaterials as DetailsMaterialsType[],
         dirtyFields: dirtyFields as Record<
           string,
           Partial<Record<keyof DetailsMaterialsType, boolean>>[]
@@ -86,7 +97,7 @@ export default function Materials() {
         onRemove: (id: number) => details_materialsApi.remove({ id }),
         onUpdate: details_materialsApi.update,
       });
-      const oldData = materials.filter(
+      const oldData = cleanedMaterials.filter(
         (item): item is DetailsMaterialsType =>
           "id" in item && typeof item.id === "number"
       );
@@ -120,28 +131,27 @@ export default function Materials() {
         notes: "",
         observations: "",
       } as DetailsMaterialsType & {
-        price: number;
-        name_material: string;
-        unit_material: number;
+        prices: PricesType;
+        materials: MaterialsType;
       });
     }
   };
   const handleRemove = (index: number) => {
-    //const materialItem = enrichedMaterials[index];
+    const currentItems = watch("materials");
+    const item = currentItems[index];
+    if (item && "id" in item && item.id !== undefined) {
+      setMaterialsToDelete((prev) => [...prev, item.id]);
+    }
     remove(index);
-    /* if (materialItem && "id" in materialItem && materialItem.id !== undefined) {
-      setMaterialsToDelete((prev) => [...prev, materialItem.id as number]);
-    } */
   };
   const { details_materials } = selectedOpportunity || {};
   useEffect(() => {
     const details = details_materials?.filter(
       (q) => q.id_quote === selectedQuoteId
     );
-    if (details) reset({materials: details});
+    if (details) reset({ materials: details });
   }, [details_materials, selectedQuoteId]);
 
-  
   const columnsMaterials = [
     { groupColsClass: "w-[1%]", label: "#" },
     { groupColsClass: "", label: "Elemento cotizado" },
@@ -151,20 +161,53 @@ export default function Materials() {
     { groupColsClass: "w-[10%]", label: "Total" },
     { groupColsClass: "w-[1%]", label: "🗑️" },
   ];
-  
-  useEffect(() => {
-    handleSetIsFieldsChanged(isSubmitSuccessful, isDirty);
-  }, [isSubmitSuccessful, isDirty]);
-  const Cell = ({ children }: { children: React.ReactNode }) => {
-    return <td className="px-1 py-2 whitespace-nowrap">{children}</td>;
-  };
+
+  useFieldsChange({isSubmitSuccessful, isDirty})
+  /* MODALES */
+  /* Precios */
   const handleOpenPrices = (index: number) => {
+    setActiveIndex(index);
     const id_material = watch(`materials.${index}.id_material`);
-    const material = materials?.find((material) => material.id === id_material);
+    const material = materials?.find((m) => m.id === id_material);
+    const prices = material?.prices;
+    setOpenPriceModal({
+      open: true,
+      data: prices ?? [],
+      idMaterial: id_material,
+    });
+  };
+  /* Materiales */
+  const handleOpenMaterials = (index: number) => {
+    setActiveIndex(index);
+    setOpenMaterialsModal(true);
+  };
+  const handleSelectMaterial = (index: number, material: MaterialTypeDB) => {
+    const { prices, ...propsMaterial } = material;
+    const defaultPrice = prices.find((p) => p.default) || {};
+    setValue(`materials.${index}.materials`, propsMaterial);
+    setValue(`materials.${index}.prices`, defaultPrice);
+    setValue(`materials.${index}.id_material`, propsMaterial.id);
+    setValue(
+      `materials.${index}.id_price`,
+      (defaultPrice as PricesType)?.id || 0
+    );
+  };
+  const handleSelectedPrice = ({
+    id,
+    price,
+  }: {
+    id: number;
+    price: PricesType;
+  }) => {
+    if (activeIndex !== null) {
+      setValue(`materials.${activeIndex}.prices`, price);
+      setValue(`materials.${activeIndex}.id_price`, id);
+      setOpenPriceModal({open: false, data: null, idMaterial: null})
+    }
   };
   return (
     <>
-      {selectedPhase && materials && units && (
+      {
         <>
           <form
             className=" flex flex-col gap-6"
@@ -205,19 +248,20 @@ export default function Materials() {
                           <Input
                             readOnly
                             placeholder="Material"
+                            value={watch(
+                              `materials.${index}.materials.description`
+                            )}
+                            onClick={() => handleOpenMaterials(index)}
                           />
                         </Cell>
                         {/* Unidad (no registrada, solo visible) */}
                         <Cell>
-                          <Select
+                          <SelectUnits
+                            value={Number(
+                              watch(`materials.${index}.materials.id_unit`)
+                            )}
                             disabled
-                          >
-                            {units?.map((unit) => (
-                              <option key={unit.id} value={unit.id}>
-                                {unit.description}
-                              </option>
-                            ))}
-                          </Select>
+                          />
                         </Cell>
 
                         {/* Cantidad (registrada) */}
@@ -256,6 +300,9 @@ export default function Materials() {
                           />
                           <Input
                             readOnly
+                            value={Number(
+                              watch(`materials.${index}.prices.price`)
+                            )}
                             placeholder="$ 0.00"
                             onClick={() => handleOpenPrices(index)}
                           />
@@ -264,9 +311,16 @@ export default function Materials() {
                         {/* Total (calculado) */}
                         <Cell>
                           <Input
-                            readOnly
-                            type="text"
+                            type="number"
                             placeholder="Total"
+                            readOnly
+                            value={
+                              roundToPrecision(
+                                watch(`materials.${index}.quantity`) *
+                                  watch(`materials.${index}.prices.price`),
+                                2
+                              ) || 0
+                            }
                           />
                         </Cell>
 
@@ -279,34 +333,21 @@ export default function Materials() {
                       </tr>
                     ))}
                 </TableDetailsQuotes>
-                <ButtonAdd
-                  title="Agregar Material"
-                  onClick={handleAdd}
-                />
+                <ButtonAdd title="Agregar Material" onClick={handleAdd} />
               </div>
             </fieldset>
             <FooterForms mode="view" />
           </form>
-          <ModalMateriales />
-          {/* {activeMaterial && activeIndex !== null && (
-            <ModalPrice
-              modalMode={true}
-              idMaterial={activeMaterial.id}
-              defaultValues={{ prices: activeMaterial.prices }}
-              onSelectPrice={(priceObj) => {
-                // Este callback lo definís en el modal y lo usás al seleccionar un precio
-                setValue(`materials.${activeIndex}.id_price`, priceObj.id, {
-                  shouldDirty: true,
-                });
-                setValue(`materials.${activeIndex}.price`, priceObj.price, {
-                  shouldDirty: true,
-                });
-                setOpenPriceModal(false);
-              }}
-            />
-          )} */}
+          <ModalMateriales
+            activeIndex={activeIndex}
+            onSelectMaterial={handleSelectMaterial}
+          />
+          <ModalPrice
+            activeIndex={activeIndex}
+            onSelectPrice={handleSelectedPrice}
+          />
         </>
-      )}
+      }
     </>
   );
 }

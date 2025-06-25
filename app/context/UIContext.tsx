@@ -5,19 +5,25 @@ import type { ModalBaseProps } from "~/components/Generals/Modals";
 import { supabase } from "~/backend/supabaseClient";
 import { unitsApi } from "~/backend/dataBase";
 import type { OpportunityType } from "~/types/database";
+import { getQuoteTotals, roundToPrecision, type Totals } from "~/utils/functions";
 import type {
   PhasesType,
   QuotesType,
-  ProfitMarginType,
   DetailsItemsType,
   DetailsMaterialsType,
-  FamilyType,
-  CategoryType,
-  SubCategoryType,
   UnitsType,
   MaterialsType,
   PricesType,
 } from "~/backend/dataBase";
+export type QuotesEnrichType = QuotesType &
+  Totals & {
+    t_mg_materials: number;
+    t_mg_labor: number;
+    t_mg_subcontracting: number;
+    t_mg_others: number;
+    total: number;
+    t_mg_total: number
+  };
 export type ViewCategorizacionProps = {
   description_category: string;
   description_family: string;
@@ -33,7 +39,7 @@ export type MaterialTypeDB = MaterialsType & {
 export type OpportunitiesTypeDB = OpportunityType & {
   client: ClientDataType;
   phases: PhasesType[];
-  quotes: QuotesType[];
+  quotes: QuotesEnrichType[];
 };
 export type CategoriesProps = {
   id: number;
@@ -58,6 +64,11 @@ type ThemeProps = "dark" | "light";
 export type SelectedMaterialType = MaterialsType & {
   prices: PricesType[] | [];
 };
+type PropsModalPrice = {
+  open: boolean;
+  data: PricesType[] | null;
+  idMaterial: number | null;
+};
 type UIContextType = {
   showModal: (modal: ModalProps) => void;
   closeModal: () => void;
@@ -66,9 +77,9 @@ type UIContextType = {
   theme: ThemeProps;
   openClientModal: boolean;
   openSupplierModal: boolean;
-  openPriceModal: boolean;
+  openPriceModal: PropsModalPrice;
   openMaterialsModal: boolean;
-  setOpenPriceModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpenPriceModal: React.Dispatch<React.SetStateAction<PropsModalPrice>>;
   setOpenClientModal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenSupplierModal: React.Dispatch<React.SetStateAction<boolean>>;
   setOpenMaterialsModal: React.Dispatch<React.SetStateAction<boolean>>;
@@ -84,10 +95,6 @@ type UIContextType = {
   setSelectedOpportunity: React.Dispatch<
     React.SetStateAction<OpportunityAll | null>
   >;
-  getOpportunity: (
-    id: number,
-    opportunitiesList: OpportunitiesTypeDB[]
-  ) => Promise<void>;
   refreshOpportunity: () => Promise<void>;
   isModeEdit: boolean;
   setIsModeEdit: React.Dispatch<React.SetStateAction<boolean>>;
@@ -110,12 +117,7 @@ type UIContextType = {
   refreshMaterial: () => Promise<void>;
   selectedPhase: number | null;
   setSelectedPhase: React.Dispatch<React.SetStateAction<number | null>>;
-  activeType: "materiales" | "mano de obra" | "subcontratos" | "otros";
-  setActiveType: React.Dispatch<
-    React.SetStateAction<
-      "materiales" | "mano de obra" | "subcontratos" | "otros"
-    >
-  >;
+
   materials: MaterialTypeDB[] | null;
   setMaterials: React.Dispatch<React.SetStateAction<MaterialTypeDB[] | null>>;
   getMaterials: () => Promise<MaterialTypeDB[]>;
@@ -151,9 +153,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [selectedPhase, setSelectedPhase] = useState<number | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<OpportunityAll | null>(null);
-  const [activeType, setActiveType] = useState<
-    "materiales" | "mano de obra" | "subcontratos" | "otros"
-  >("materiales");
+
   const [selectedSupplier, setSelectedSupplier] =
     useState<ClientDataType | null>(null);
   /* Booleans */
@@ -166,7 +166,11 @@ export function UIProvider({ children }: { children: ReactNode }) {
   /* Modales Específicos */
   const [openClientModal, setOpenClientModal] = useState<boolean>(false);
   const [openMaterialsModal, setOpenMaterialsModal] = useState<boolean>(false);
-  const [openPriceModal, setOpenPriceModal] = useState<boolean>(false);
+  const [openPriceModal, setOpenPriceModal] = useState<PropsModalPrice>({
+    open: false,
+    data: null,
+    idMaterial: null,
+  });
   const [openSupplierModal, setOpenSupplierModal] = useState<boolean>(false);
   /* Funcines */
   const toggleTheme = () => {
@@ -288,7 +292,9 @@ export function UIProvider({ children }: { children: ReactNode }) {
     }
     return allData;
   };
-  const getOpportunityById = async (id: number): Promise<OpportunityAll | null> => {
+  const getOpportunityById = async (
+    id: number
+  ): Promise<OpportunityAll | null> => {
     try {
       const { data: opportunity, error } = await supabase
         .from("opportunities")
@@ -315,15 +321,52 @@ export function UIProvider({ children }: { children: ReactNode }) {
         );
         const { data, error } = await supabase
           .from("quotes")
-          .select("details_items(*), details_materials(*)")
+          .select(
+            "details_items(*), details_materials(*,materials:id_material(*),prices:id_price(*))"
+          )
           .in("id", idsQuotes);
 
         if (error)
           throw new Error(
             `Error al obtener detalles de quotes: ${error.message}`
           );
-
         if (data?.length) {
+          const orifinalsQuotes: QuotesEnrichType[] = opportunity.quotes;
+          const updatedQuotes: QuotesEnrichType[] = orifinalsQuotes.map((q) => {
+            const match = data.find((d) => {
+              const id =
+                d.details_items[0]?.id_quote ??
+                d.details_materials[0]?.id_quote;
+              return id === q.id;
+            });
+
+            if (!match) return q;
+            const quoteTotals = getQuoteTotals(match);
+            const t_mg_materials =
+              roundToPrecision(quoteTotals.total_materials * ((q.materials ?? 0) / 100 + 1),2);
+            const t_mg_labor =
+              roundToPrecision(quoteTotals.total_labor * ((q.labor ?? 0) / 100 + 1),2);
+            const t_mg_subcontracting =
+              roundToPrecision(quoteTotals.total_subcontracting *
+              ((q.subcontracting ?? 0) / 100 + 1),2);
+            const t_mg_others =
+              roundToPrecision(quoteTotals.total_others * ((q.others ?? 0) / 100 + 1),2);
+              const total = roundToPrecision(t_mg_materials + t_mg_labor + t_mg_subcontracting + t_mg_others,2)
+              const t_mg_total = roundToPrecision(total * ((q.general ?? 0)/100 + 1),2)
+            return {
+              ...q,
+              ...quoteTotals,
+              t_mg_materials: t_mg_materials,
+              t_mg_labor: t_mg_labor,
+              t_mg_subcontracting: t_mg_subcontracting,
+              t_mg_others: t_mg_others,
+              total: total,
+              t_mg_total: t_mg_total
+            };
+          });
+
+          opportunity.quotes = updatedQuotes;
+
           dataQuotes = {
             details_items: data.flatMap((q) => q.details_items ?? []),
             details_materials: data.flatMap((q) => q.details_materials ?? []),
@@ -354,55 +397,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
         ) ?? []
     );
   };
-  const getOpportunity = async (
-    id: number,
-    opportunitiesList: OpportunitiesTypeDB[]
-  ) => {
-    try {
-      const opportunity = opportunitiesList.find((item) => item.id === id);
-      if (!opportunity) throw new Error("no hay oportunidades asociadas");
-
-      const hasQuotes =
-        Array.isArray(opportunity.quotes) && opportunity.quotes.length > 0;
-
-      let dataQuotes: QuotesDataTypes = {
-        details_items: [],
-        details_materials: [],
-      };
-
-      if (hasQuotes) {
-        const idsQuotes = opportunity.quotes.map(
-          (quote: QuotesType) => quote.id
-        );
-
-        const { data, error } = await supabase
-          .from("quotes")
-          .select("details_items(*), details_materials(*)")
-          .in("id", idsQuotes);
-
-        if (error) {
-          throw new Error(
-            `Error al obtener detalles de quotes: ${error.message}`
-          );
-        }
-        if (data?.length) {
-          // Si tenés múltiples quotes, podrías ajustar esta lógica para agrupar todos los datos
-          dataQuotes = data[0];
-        }
-      }
-
-      const mergedOpportunity = {
-        ...opportunity,
-        ...dataQuotes,
-      };
-      setSelectedClient(mergedOpportunity.client);
-      setSelectedOpportunity(mergedOpportunity);
-    } catch (err) {
-      console.error("Error en getOpportunity:", err);
-    }
-  };
-
-  /* Revisar */
   const handleSetIsFieldsChanged = (
     isSubmitSuccessful: boolean,
     isDirty: boolean
@@ -437,7 +431,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
         setSelectedClient,
         selectedOpportunity,
         setSelectedOpportunity,
-        getOpportunity,
         refreshOpportunity,
         isModeEdit,
         setIsModeEdit,
@@ -459,8 +452,6 @@ export function UIProvider({ children }: { children: ReactNode }) {
         refreshMaterial,
         selectedPhase,
         setSelectedPhase,
-        activeType,
-        setActiveType,
         openMaterialsModal,
         setOpenMaterialsModal,
         getMaterials,

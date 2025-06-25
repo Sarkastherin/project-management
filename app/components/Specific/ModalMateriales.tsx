@@ -2,13 +2,22 @@ import { Button } from "../Forms/Buttons";
 import { useUI } from "~/context/UIContext";
 import { MaterialTable } from "~/templates/MaterialTable";
 import type { HandleRowClicked } from "~/templates/MaterialTable";
-
-export default function ModalMateriales() {
-  const { openMaterialsModal, setOpenMaterialsModal, setSelectedMaterial } =
-    useUI();
+import type { PricesType } from "~/backend/dataBase";
+import type { MaterialTypeDB } from "~/context/UIContext";
+type ModalPriceProps = {
+  activeIndex: number | null;
+  onSelectMaterial: (index: number, material: MaterialTypeDB) => void;
+};
+export default function ModalMateriales({
+  activeIndex,
+  onSelectMaterial,
+}: ModalPriceProps) {
+  const { openMaterialsModal, setOpenMaterialsModal } = useUI();
   const handleRowClicked: HandleRowClicked = (data) => {
-    setSelectedMaterial(data)
-    setOpenMaterialsModal(false)
+    if (activeIndex !== null) {
+      onSelectMaterial(activeIndex, data);
+      setOpenMaterialsModal(false);
+    }
   };
   return (
     <div

@@ -1,16 +1,11 @@
 import type { Route } from "../../+types/root";
-import { ContainerToForms } from "~/components/Generals/Containers";
-import QuotesForm from "~/templates/QuotesForm";
 import { useUI } from "~/context/UIContext";
 import { SectionCreateQuote } from "~/components/Specific/SectionCreateQuote";
 import { Outlet } from "react-router";
 import { Select } from "~/components/Forms/Inputs";
 import { Button } from "~/components/Forms/Buttons";
 import { useEffect, useState } from "react";
-import { ButtonNavigate } from "~/components/Specific/Buttons";
-import { useParams, useNavigate } from "react-router";
-import type { MouseEventHandler } from "react";
-import { useOutletContext } from "react-router";
+import { useParams, useNavigate, useOutletContext } from "react-router";
 import type { ChangeEventHandler } from "react";
 
 export function meta({}: Route.MetaArgs) {
@@ -29,26 +24,19 @@ export default function Quotes() {
   }>();
   const { id } = useParams();
   const navigate = useNavigate();
-
+const [activeType, setActiveType] = useState<
+    "materiales" | "mano de obra" | "subcontratos" | "otros" | ""
+  >("materiales");
   const {
     selectedOpportunity,
     selectedPhase,
     setSelectedPhase,
-    activeType,
-    setActiveType,
     isFieldsChanged,
     setIsFieldsChanged,
   } = useUI();
-  const { phases, quotes, details_items, details_materials } =
+  const { phases, quotes, details_materials, details_items } =
     selectedOpportunity || {};
   if (quotes?.length === 0) return <SectionCreateQuote />;
-  const quoteActive = quotes?.find((quote) => quote.active);
-  const { id: id_quote_active } = quoteActive || {};
-  const valuesForm = {
-    //id_phase: phases && phases.length > 0 ? phases[0].id : 0,
-    items: details_items,
-    materials: details_materials,
-  };
   const handleNavigate = (t: PropsType) => {
     const href = `opportunity/${id}/quotes/${
       t.key === "materiales" ? "materials" : "items"
@@ -57,11 +45,11 @@ export default function Quotes() {
       if (confirm("Tienes cambios sin guardar, ¿deseas continuar?")) {
         setIsFieldsChanged(false);
         navigate(href);
-        setActiveType(t.key)
+        setActiveType(t.key);
       }
     } else {
       navigate(href);
-      setActiveType(t.key)
+      setActiveType(t.key);
     }
   };
   const types: PropsType[] = [
@@ -76,17 +64,32 @@ export default function Quotes() {
     setSelectedPhase(Number(value));
   };
   useEffect(() => {
-    if (phases) setSelectedPhase(phases[0].id);
-  }, [phases]);
+    if(!selectedQuoteId) return
+    const materials_list = details_materials?.filter(
+      (q) => q.id_quote === selectedQuoteId
+    );
+    const items_list = details_items?.filter(
+      (q) => q.id_quote === selectedQuoteId
+    );
+    if (activeType === "materiales" && materials_list && materials_list.length > 0) {
+      const defaultPhase = materials_list[0].id_phase ?? null;
+      setSelectedPhase(defaultPhase || null);
+    }
+    if (activeType !== "materiales" && items_list && items_list.length > 0) {
+      const firstItem = items_list.find(item => item.type === activeType)
+      const defaultPhase = firstItem?.id_phase ?? null;
+      setSelectedPhase(defaultPhase || null);
+    }
+  }, [activeType, selectedQuoteId]);
   return (
     <>
-      {quoteActive && selectedPhase && (
+      {selectedQuoteId && (
         <div className="w-full px-8 mt-8 mx-auto pb-18">
           <section className="flex gap-4">
             {/* Selector de fase */}
             <div className="w-2/3">
               <Select
-                defaultValue={String(selectedPhase)}
+                value={String(selectedPhase)}
                 id="id_phase"
                 onChange={(e) => handleChangePhases(e)}
                 disabled={isFieldsChanged}
@@ -114,7 +117,7 @@ export default function Quotes() {
               ))}
             </div>
           </section>
-          <Outlet context={{selectedQuoteId}}/>
+          <Outlet context={{ selectedQuoteId, activeType, setActiveType }} />
         </div>
       )}
     </>

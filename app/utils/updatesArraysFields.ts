@@ -41,7 +41,6 @@ export const updatesArrayFields = async <T extends object>({
           acc[key] = field[key];
           return acc;
         }, {} as Partial<T>);
-
         const { error: errorUpdate } = await onUpdate({
           id: (field as any).id, // asegurate que id exista en tus tipos
           values: updates,

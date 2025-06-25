@@ -32,38 +32,62 @@ export function SectionCreateQuote() {
       title="Sin Cotización"
       message="Crea una nueva cotización para esta oportunidad"
     >
-      <ButtonCreateQuote/>
+      <ButtonCreateQuote />
     </ContainerSection>
   );
 }
-export function ButtonCreateQuote({label = "Crear cotización"}: {label?:string}) {
-  useOpportunityRealtime()
+export function ButtonCreateQuote({
+  label = "Crear cotización",
+}: {
+  label?: string;
+}) {
+  useOpportunityRealtime();
   const { selectedOpportunity, showModal } = useUI();
+  const { quotes } = selectedOpportunity || {};
+
   const handleCreateQuote = async () => {
-    if (selectedOpportunity) {
-      showModal({ title: "Procesando", message: "Creando cotización" });
-      const newQuote: QuotesInput = {
-        id_opportunity: selectedOpportunity.id,
-        status: "Abierta",
-        active: true,
-      };
-      const { error } = await quotesApi.insertOne(newQuote);
-      if (error)
+    try {
+      if (selectedOpportunity) {
+        if (quotes && quotes.length > 0) {
+          const activeQuote = quotes.find((q) => q.active === true);
+          if (!activeQuote) return;
+          const id_activeQuote = activeQuote.id;
+          const confirm = window.confirm(
+            "Ya existe una cotización activa. ¿Querés reemplazarla con una nueva?"
+          );
+          if (!confirm) return;
+          const { error: updateError } = await quotesApi.update({
+            id: id_activeQuote,
+            values: { active: false },
+          });
+          if (updateError) throw new Error(updateError.message);
+        }
+        showModal({ title: "Procesando", message: "Creando cotización" });
+        const newQuote: QuotesInput = {
+          id_opportunity: selectedOpportunity.id,
+          status: "Abierta",
+          active: true,
+        };
+        const { error: insertError } = await quotesApi.insertOne(newQuote);
+        if (insertError) throw new Error(insertError.message);
         showModal({
-          title: "Error",
-          message: "No se pudo inicializar la cotización",
-          code: String(error),
-          variant: "error",
+          title: "¡Todo OK!",
+          message: "Cotización inicializada",
+          variant: "success",
         });
+      }
+    } catch (e) {
       showModal({
-        title: "¡Todo OK!",
-        message: "Cotización inicializada",
-        variant: "success",
+        title: "Error al actualizar",
+        message: `Problemas al intentar crear la cotización`,
+        code: String(e),
+        variant: "error",
       });
     }
   };
   return <Button onClick={handleCreateQuote}>{label}</Button>;
 }
+
 export function ButtonNavigateDetails() {
   const { selectedOpportunity } = useUI();
   return (
