@@ -7,7 +7,7 @@ import {
 import { useUI, type MaterialTypeDB } from "~/context/UIContext";
 import FooterForms from "~/templates/FooterForms";
 import { TableDetailsQuotes, Cell } from "~/templates/TableDetailsQuotes";
-import { Input, Select } from "~/components/Forms/Inputs";
+import { Input} from "~/components/Forms/Inputs";
 import { ButtonDeleteIcon, ButtonAdd } from "~/components/Specific/Buttons";
 import { useEffect, useState } from "react";
 import ModalMateriales from "~/components/Specific/ModalMateriales";
@@ -302,7 +302,7 @@ export default function Materials() {
                             readOnly
                             value={Number(
                               watch(`materials.${index}.prices.price`)
-                            )}
+                            ) || 0}
                             placeholder="$ 0.00"
                             onClick={() => handleOpenPrices(index)}
                           />

@@ -26,11 +26,11 @@ export default function PricesForm({
   onSelectPrice, // <- NUEVO
 }: {
   defaultValues: PricesFormType;
-  idMaterial: number | null;
+  idMaterial: number | undefined;
   modalMode: boolean;
   onSelectPrice?: (price: { id: number; price: PricesType }) => void;
 }) {
-  usePricesRealtime();
+  usePricesRealtime(idMaterial);
   const { suppliers } = useContacts();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [pricesToDelete, setPricesToDelete] = useState<Array<PricesType["id"]>>(

@@ -15,9 +15,7 @@ export default function Home() {
   return (
     <>
       <div className="mt-20 grid place-content-center">
-        <Button type="button" onClick={() => setOpenSupplierModal(true)}>
-          Proveedores
-        </Button>
+        <p className="font-bold text-xl">Dashboard</p>
       </div>
       <ModalProveedores />
     </>

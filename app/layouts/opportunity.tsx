@@ -7,6 +7,7 @@ import {
   InboxIcon,
   ReceiptPercentIcon,
   SwatchIcon,
+  ClipboardDocumentIcon
 } from "@heroicons/react/16/solid";
 /* Contexts */
 import { useUI } from "~/context/UIContext";
@@ -43,6 +44,11 @@ const menuItems = (id: number) => {
       title: "Margenes y Condiciones",
       href: `/opportunity/${id}/conditions`,
       icon: <ReceiptPercentIcon className="w-4" />,
+    },
+    {
+      title: "Informes",
+      href: `/opportunity/${id}/report`,
+      icon: <ClipboardDocumentIcon className="w-4" />,
     },
   ];
 };
@@ -225,7 +231,12 @@ export default function OpportunityLayout() {
                       checked={q.active}
                       onChange={async () => {
                         if (q.active) return;
-
+                        setHidden(true);
+                        showModal({
+                          title: "Actualizando...",
+                          message: "Aplicando cambio de cotización activa.",
+                          variant: "information",
+                        });
                         const currentActive = selectedOpportunity?.quotes.find(
                           (q) => q.active
                         );
@@ -265,8 +276,12 @@ export default function OpportunityLayout() {
                             variant: "error",
                           });
                         } else {
-                          await getOpportunityById(Number(id)); // refrescar para reflejar cambios
-                          setHidden(true);
+                           showModal({
+                              title: "¡Todo OK!",
+                              message:
+                                "Cotización cambiada.",
+                              variant: "success",
+                            });
                         }
                       }}
                     />

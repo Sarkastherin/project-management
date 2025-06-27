@@ -23,7 +23,7 @@ export function useMaterialsRealtime() {
 }
 
 
-export function usePricesRealtime() {
+export function usePricesRealtime(idMaterial?:number) {
   const { refreshMaterial } = useUI();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debounceDelay = 500; // ajustar según el ritmo de tus eventos
@@ -38,7 +38,7 @@ export function usePricesRealtime() {
           // Reiniciar el timer con cada evento
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           timeoutRef.current = setTimeout(() => {
-            refreshMaterial();
+            refreshMaterial(idMaterial);
             timeoutRef.current = null;
           }, debounceDelay);
         }

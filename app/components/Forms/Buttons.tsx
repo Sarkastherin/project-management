@@ -2,6 +2,7 @@ import type { JSX, ButtonHTMLAttributes } from "react";
 export const variants = {
   primary: "border-indigo-600 bg-indigo-600 text-white hover:text-indigo-600 hover:border-indigo-600 dark:border-indigo-400 dark:bg-indigo-400 dark:text-zinc-800 dark:hover:text-indigo-400 dark:hover:border-indigo-400",
   blue: "border-blue-600 bg-blue-600 text-white hover:text-blue-600 hover:border-blue-600 dark:border-blue-500 dark:bg-blue-500 dark:text-zinc-800 dark:hover:text-blue-500 dark:hover:border-blue-500",
+  green: "border-lime-600 bg-lime-600 text-white hover:text-lime-600 hover:border-lime-600 dark:border-lime-500 dark:bg-lime-500 dark:text-zinc-800 dark:hover:text-lime-500 dark:hover:border-lime-500",
   yellow: "border-yellow-500 bg-yellow-500 text-zinc-800 hover:text-yellow-500 hover:border-yellow-500",
   secondary: "border-gray-400 bg-gray-400 text-white hover:text-gray-400 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-600 dark:text-zinc-800 dark:hover:text-gray-600 dark:hover:border-gray-600",
   danger: "border-red-600 bg-red-600 text-white hover:text-red-600 hover:border-red-600 dark:border-red-400 dark:bg-red-400 dark:text-zinc-800 dark:hover:text-red-400 dark:hover:border-red-400",

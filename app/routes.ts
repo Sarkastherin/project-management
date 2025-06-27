@@ -21,6 +21,7 @@ export default [
         route(":id/information", "routes/opportunity/information.tsx"),
         route(":id/phases","routes/opportunity/phases.tsx"),
         route(":id/conditions", "routes/opportunity/conditions.tsx"),
+        route(":id/report", "routes/opportunity/report.tsx"),
         layout("routes/opportunity/quotes.tsx", [
           route(":id/quotes/items", "routes/opportunity/quotes/items.tsx"),
           route(

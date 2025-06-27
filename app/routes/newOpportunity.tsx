@@ -13,11 +13,14 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function NewOpportunity() {
-  useOpportunityRealtime()
+  useOpportunityRealtime();
   const { user } = useAuth();
-  const { setSelectedClient} = useUI()
+  const { setSelectedClient, setSelectedOpportunity } = useUI();
 
-  useEffect(() => {setSelectedClient(null)},[])
+  useEffect(() => {
+    setSelectedOpportunity(null);
+    setSelectedClient(null);
+  }, []);
   return (
     <>
       <ContainerWithTitle title="Creando nueva oportunidad">

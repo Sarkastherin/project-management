@@ -114,7 +114,7 @@ type UIContextType = {
     React.SetStateAction<MaterialTypeDB | null>
   >;
   getMaterial: (id: number, materialsList: MaterialTypeDB[]) => void;
-  refreshMaterial: () => Promise<void>;
+  refreshMaterial: (id?:number) => Promise<void>;
   selectedPhase: number | null;
   setSelectedPhase: React.Dispatch<React.SetStateAction<number | null>>;
 
@@ -251,12 +251,13 @@ export function UIProvider({ children }: { children: ReactNode }) {
     const data = materialsList.find((item) => item.id === id);
     setSelectedMaterial(data || null);
   };
-  const refreshMaterial = async () => {
-    if (!selectedMaterial) return;
-    const { id } = selectedMaterial;
+  const refreshMaterial = async (id?: number) => {
+    const { id: idSelected } = selectedMaterial || {};
+    const idMaterial = idSelected ? idSelected : id 
+    if (!idMaterial) return;
     const updatedMaterials = await getMaterials();
     if (!updatedMaterials) return;
-    getMaterial(id, updatedMaterials);
+    getMaterial(idMaterial, updatedMaterials);
   };
 
   const getOpportunities = async (): Promise<OpportunitiesTypeDB[]> => {

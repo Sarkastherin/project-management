@@ -45,7 +45,6 @@ export default function Resumen() {
     if (!quote) return;
     setTotalQuote(quote.t_mg_total);
   }, [selectedQuoteId]);
-
   return (
     <ContainerToForms>
       <h2 className="text-2xl font-bold">Resumen Oportunidad Id:</h2>
